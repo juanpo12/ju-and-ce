@@ -1,0 +1,466 @@
+{
+  "id": "611c7ae8-dd76-45a1-8b1c-4a7f5f12c880",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.entradas": {
+      "name": "entradas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "espacio_id": {
+          "name": "espacio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tmdb_id": {
+          "name": "tmdb_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vista_el": {
+          "name": "vista_el",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lugar": {
+          "name": "lugar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agregada_por": {
+          "name": "agregada_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creada_en": {
+          "name": "creada_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "entradas_espacio_estado_idx": {
+          "name": "entradas_espacio_estado_idx",
+          "columns": [
+            {
+              "expression": "espacio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "estado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "creada_en",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "entradas_espacio_id_espacios_id_fk": {
+          "name": "entradas_espacio_id_espacios_id_fk",
+          "tableFrom": "entradas",
+          "tableTo": "espacios",
+          "columnsFrom": [
+            "espacio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entradas_tmdb_id_peliculas_tmdb_id_fk": {
+          "name": "entradas_tmdb_id_peliculas_tmdb_id_fk",
+          "tableFrom": "entradas",
+          "tableTo": "peliculas",
+          "columnsFrom": [
+            "tmdb_id"
+          ],
+          "columnsTo": [
+            "tmdb_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "entradas_agregada_por_perfiles_id_fk": {
+          "name": "entradas_agregada_por_perfiles_id_fk",
+          "tableFrom": "entradas",
+          "tableTo": "perfiles",
+          "columnsFrom": [
+            "agregada_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "entradas_espacio_tmdb_uq": {
+          "name": "entradas_espacio_tmdb_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "espacio_id",
+            "tmdb_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "entradas_estado_valido": {
+          "name": "entradas_estado_valido",
+          "value": "\"entradas\".\"estado\" in ('vista', 'pendiente')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.espacios": {
+      "name": "espacios",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creado_en": {
+          "name": "creado_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.peliculas": {
+      "name": "peliculas",
+      "schema": "",
+      "columns": {
+        "tmdb_id": {
+          "name": "tmdb_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "titulo_original": {
+          "name": "titulo_original",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anio": {
+          "name": "anio",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duracion_min": {
+          "name": "duracion_min",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "director": {
+          "name": "director",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "generos": {
+          "name": "generos",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "poster_path": {
+          "name": "poster_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sinopsis": {
+          "name": "sinopsis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actualizada_en": {
+          "name": "actualizada_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.perfiles": {
+      "name": "perfiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "espacio_id": {
+          "name": "espacio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'terracota'"
+        },
+        "tema": {
+          "name": "tema",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'papel'"
+        }
+      },
+      "indexes": {
+        "perfiles_espacio_idx": {
+          "name": "perfiles_espacio_idx",
+          "columns": [
+            {
+              "expression": "espacio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "perfiles_id_users_id_fk": {
+          "name": "perfiles_id_users_id_fk",
+          "tableFrom": "perfiles",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "perfiles_espacio_id_espacios_id_fk": {
+          "name": "perfiles_espacio_id_espacios_id_fk",
+          "tableFrom": "perfiles",
+          "tableTo": "espacios",
+          "columnsFrom": [
+            "espacio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "perfiles_tema_valido": {
+          "name": "perfiles_tema_valido",
+          "value": "\"perfiles\".\"tema\" in ('papel', 'bullet')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.puntajes": {
+      "name": "puntajes",
+      "schema": "",
+      "columns": {
+        "entrada_id": {
+          "name": "entrada_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "perfil_id": {
+          "name": "perfil_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estrellas": {
+          "name": "estrellas",
+          "type": "numeric(2, 1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "comentario": {
+          "name": "comentario",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actualizado_en": {
+          "name": "actualizado_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "puntajes_perfil_idx": {
+          "name": "puntajes_perfil_idx",
+          "columns": [
+            {
+              "expression": "perfil_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "puntajes_entrada_id_entradas_id_fk": {
+          "name": "puntajes_entrada_id_entradas_id_fk",
+          "tableFrom": "puntajes",
+          "tableTo": "entradas",
+          "columnsFrom": [
+            "entrada_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "puntajes_perfil_id_perfiles_id_fk": {
+          "name": "puntajes_perfil_id_perfiles_id_fk",
+          "tableFrom": "puntajes",
+          "tableTo": "perfiles",
+          "columnsFrom": [
+            "perfil_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "puntajes_entrada_id_perfil_id_pk": {
+          "name": "puntajes_entrada_id_perfil_id_pk",
+          "columns": [
+            "entrada_id",
+            "perfil_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "puntajes_estrellas_validas": {
+          "name": "puntajes_estrellas_validas",
+          "value": "\"puntajes\".\"estrellas\" between 0.5 and 5"
+        }
+      },
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

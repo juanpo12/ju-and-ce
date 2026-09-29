@@ -1,0 +1,178 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Los dos temas.
+
+   El tema no es un modo oscuro: cambia fondo, tipografía, radios y acento.
+   Ningún componente escribe un hex a mano — todo sale de estas variables.
+
+   El atributo `data-tema` va en el <html> y lo escribe el layout del servidor,
+   leyendo `perfiles.tema`. Aplicarlo con JavaScript después de montar haría
+   ver un flash del tema equivocado.
+--------------------------------------------------------------------------- */
+
+:root,
+[data-tema='papel'] {
+  --fondo: #f5efe1;
+  --superficie: #fffcf4;
+  --tinta: #2b2620;
+  --tinta-suave: #5c5348;
+  --acento: #c2562f;
+  --acento-suave: #f0d9cd;
+  --borde: #e0d5be;
+  --estrella-vacia: #cfc3ac;
+  --radio: 0.75rem;
+  --tipo-titulo: var(--font-caveat), cursive;
+  --tipo-texto: var(--font-lora), Georgia, serif;
+
+  /* Los colores de las personas también cambian entre un tema y el otro. */
+  --durazno: #e8956b;
+  --menta: #6bab92;
+
+  /* Renglones de cuaderno. Sin imágenes, sin peso, escala a cualquier pantalla. */
+  --textura: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 1.7rem,
+    #e3d8c2 1.7rem,
+    #e3d8c2 calc(1.7rem + 1px)
+  );
+  --textura-tamano: auto;
+}
+
+[data-tema='bullet'] {
+  --fondo: #fbfaf7;
+  --superficie: #ffffff;
+  --tinta: #35323f;
+  --tinta-suave: #6b6779;
+  --acento: #7d6bc4;
+  --acento-suave: #e6e1f5;
+  --borde: #ece9f4;
+  --estrella-vacia: #d9d5e6;
+  --radio: 1rem;
+  --tipo-titulo: var(--font-caveat), cursive;
+  --tipo-texto: var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
+
+  --durazno: #e0906f;
+  --menta: #5fa98f;
+
+  /* Grilla de puntos de bullet journal. */
+  --textura: radial-gradient(circle at 1px 1px, #dedae9 1px, transparent 0);
+  --textura-tamano: 1.5rem 1.5rem;
+}
+
+[data-tema='menta'] {
+  --fondo: #e4f2ea;
+  --superficie: #f9fdfb;
+  /* La tinta es el chocolate del granizado, no un gris. */
+  --tinta: #2a231d;
+  --tinta-suave: #5d5147;
+  --acento: #17795c;
+  --acento-suave: #cbe8da;
+  --borde: #c9e2d4;
+  --estrella-vacia: #b4d2c2;
+  --radio: 0.875rem;
+  --tipo-titulo: var(--font-caveat), cursive;
+  --tipo-texto: var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
+
+  /* Acá los colores de las personas no pueden ser durazno y menta: el segundo
+     se perdería contra el fondo y contra el acento. Menta pasa a ser el cacao
+     del granizado, que además es lo que le da el nombre al tema. */
+  --durazno: #e0824c;
+  --menta: #8b5e3c;
+
+  /* Los chips del granizado. Son elipses, no círculos, y con los radios
+     cruzados (unas anchas, otras altas): un chip de chocolate es una escama
+     irregular, y una grilla de puntos perfectos se lee como bullet journal, que
+     es justo el otro tema. El tile de 130px con trece chips da densidad sin
+     volverse ruido debajo del texto. El marrón va saturado y no casi-negro:
+     sobre el verde, un gris oscuro translúcido se lee gris, no chocolate. */
+  --textura:
+    radial-gradient(ellipse 3.3px 2.5px at 12% 18%, #4a2c18a6 0 99%, transparent 0),
+    radial-gradient(ellipse 2.0px 2.9px at 68% 9%, #4a2c1891 0 99%, transparent 0),
+    radial-gradient(ellipse 2.9px 2.0px at 41% 52%, #4a2c18a0 0 99%, transparent 0),
+    radial-gradient(ellipse 1.6px 2.0px at 88% 61%, #4a2c1882 0 99%, transparent 0),
+    radial-gradient(ellipse 2.5px 3.3px at 7% 74%, #4a2c189a 0 99%, transparent 0),
+    radial-gradient(ellipse 2.0px 1.6px at 55% 84%, #4a2c187a 0 99%, transparent 0),
+    radial-gradient(ellipse 1.6px 2.5px at 31% 33%, #4a2c188b 0 99%, transparent 0),
+    radial-gradient(ellipse 2.9px 2.0px at 93% 27%, #4a2c1897 0 99%, transparent 0),
+    radial-gradient(ellipse 2.0px 2.5px at 77% 44%, #4a2c1885 0 99%, transparent 0),
+    radial-gradient(ellipse 2.5px 1.6px at 22% 94%, #4a2c188e 0 99%, transparent 0),
+    radial-gradient(ellipse 1.6px 2.0px at 61% 67%, #4a2c187d 0 99%, transparent 0),
+    radial-gradient(ellipse 3.3px 2.0px at 47% 14%, #4a2c18a3 0 99%, transparent 0),
+    radial-gradient(ellipse 2.0px 2.9px at 84% 88%, #4a2c1888 0 99%, transparent 0);
+  --textura-tamano: 130px 130px;
+}
+
+/* ---------------------------------------------------------------------------
+   Las variables entran al motor de Tailwind con `@theme inline`, así podemos
+   escribir `bg-fondo` o `text-tinta` como si fueran colores propios en vez de
+   `bg-[var(--fondo)]` por toda la app.
+
+   `inline` es la parte que importa: hace que la utilidad emita `var(--fondo)`
+   en vez de copiar el valor, que es lo que permite que el tema cambie.
+--------------------------------------------------------------------------- */
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-acento: var(--acento);
+  --color-acento-suave: var(--acento-suave);
+  --color-borde: var(--borde);
+  --color-estrella-vacia: var(--estrella-vacia);
+  --color-durazno: var(--durazno);
+  --color-menta: var(--menta);
+
+  --radius-tema: var(--radio);
+
+  --font-titulo: var(--tipo-titulo);
+  --font-texto: var(--tipo-texto);
+}
+
+@layer base {
+  html {
+    background-color: var(--fondo);
+    color: var(--tinta);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--tipo-texto);
+    background-image: var(--textura);
+    background-size: var(--textura-tamano);
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--tipo-titulo);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  /* Que el notch y la barra de gestos no se coman nada. */
+  .safe-arriba { padding-top: env(safe-area-inset-top, 0px); }
+  .safe-abajo  { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .tarjeta {
+    background-color: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+  }
+
+  /* El foco tiene que verse en los dos temas, sobre fondo claro. */
+  .foco:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+}
