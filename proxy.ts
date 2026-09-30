@@ -29,8 +29,11 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Esta llamada es la que dispara el refresco. No la saques.
-  const { data } = await supabase.auth.getUser();
+  // Esta llamada es la que dispara el refresco. No la saques. getClaims() y no
+  // getUser(): corre antes de cada request, y con claves asimétricas verifica
+  // el JWT sin ir al servidor de Auth.
+  const { data } = await supabase.auth.getClaims();
+  const logueado = Boolean(data?.claims.sub);
 
   const ruta = request.nextUrl.pathname;
   const esPublica = ruta.startsWith('/entrar') || ruta.startsWith('/auth');
@@ -38,14 +41,14 @@ export async function proxy(request: NextRequest) {
   // app, y tampoco rebotarlo a /entrar — desde ahi volveria aca.
   const esAntesala = ruta.startsWith('/sin-libreta');
 
-  if (!data.user && !esPublica) {
+  if (!logueado && !esPublica) {
     const url = request.nextUrl.clone();
     url.pathname = '/entrar';
     url.searchParams.set('volver', ruta);
     return NextResponse.redirect(url);
   }
 
-  if (data.user && ruta.startsWith('/entrar') && !esAntesala) {
+  if (logueado && ruta.startsWith('/entrar') && !esAntesala) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     url.search = '';

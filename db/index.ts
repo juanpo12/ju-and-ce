@@ -68,8 +68,12 @@ export async function comoUsuario<T>(
 ): Promise<T> {
   return abrir().transaction(async (tx) => {
     const claims = JSON.stringify({ sub: userId, role: 'authenticated' });
-    await tx.execute(sql`select set_config('request.jwt.claims', ${claims}, true)`);
-    await tx.execute(sql`set local role authenticated`);
+    // Las dos cosas en un solo statement: cada `execute` es un viaje al pooler,
+    // y esto corre en cada lectura. `set_config('role', …, true)` es lo mismo
+    // que `set local role`.
+    await tx.execute(
+      sql`select set_config('request.jwt.claims', ${claims}, true), set_config('role', 'authenticated', true)`,
+    );
     return fn(tx);
   });
 }

@@ -36,8 +36,10 @@ const local = drizzle(pg, { schema });
 const comoUsuario: Ctx['comoUsuario'] = (userId, fn) =>
   local.transaction(async (tx) => {
     const claims = JSON.stringify({ sub: userId, role: 'authenticated' });
-    await tx.execute(sql`select set_config('request.jwt.claims', ${claims}, true)`);
-    await tx.execute(sql`set local role authenticated`);
+    // Igual que `comoUsuario()` en db/index.ts: un solo statement.
+    await tx.execute(
+      sql`select set_config('request.jwt.claims', ${claims}, true), set_config('role', 'authenticated', true)`,
+    );
     return fn(tx as unknown as Db);
   });
 

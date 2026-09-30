@@ -97,7 +97,17 @@ await pg.exec(`
     ('11111111-0000-4000-8000-000000000006'::uuid, '${CECI}'::uuid,        3,   'Demasiado larga.');
 `);
 
-const servidor = new PGLiteSocketServer({ db: pg, port: PUERTO, host: '127.0.0.1' });
+// Más de una conexión: Next carga `db/index.ts` en más de un grafo de módulos
+// (el render, las server actions, los route handlers), cada uno con su propio
+// pool. Con el default (1), la segunda conexión se corta con ECONNRESET y en la
+// demo no andaban ni la búsqueda ni el alta. Es seguro: el servidor encola por
+// query y, con una transacción abierta, solo atiende a la conexión que la abrió.
+const servidor = new PGLiteSocketServer({
+  db: pg,
+  port: PUERTO,
+  host: '127.0.0.1',
+  maxConnections: 10,
+});
 await servidor.start();
 console.log(`Postgres de la demo en 127.0.0.1:${PUERTO}\n`);
 

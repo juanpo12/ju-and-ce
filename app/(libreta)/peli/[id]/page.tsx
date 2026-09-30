@@ -53,6 +53,8 @@ export default async function Ficha({ params }: { params: Promise<{ id: string }
             alt=""
             fill
             sizes="100vw"
+            // Es lo más grande de la pantalla (el LCP): que no espere.
+            loading="eager"
             className="scale-125 object-cover opacity-45 blur-2xl saturate-150"
           />
         ) : (

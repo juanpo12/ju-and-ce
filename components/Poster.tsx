@@ -40,7 +40,10 @@ export function Poster({
       alt={`Póster de ${titulo}`}
       width={w}
       height={h}
-      priority={prioridad}
+      // `priority` está deprecado desde Next 16: lo que se ve primero va con
+      // carga inmediata y prioridad alta en la red.
+      loading={prioridad ? 'eager' : undefined}
+      fetchPriority={prioridad ? 'high' : undefined}
       sizes={
         tamano === 'grilla'
           ? '(min-width: 1280px) 200px, (min-width: 768px) 25vw, 45vw'

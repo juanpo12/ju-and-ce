@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
-import { and, asc, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, getViewSelectedFields, gte, ne, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import {
   comoUsuario,
   dbAdmin,
@@ -30,26 +31,33 @@ export type PerfilConCompanero = Perfil & {
   companero: Pick<Perfil, 'id' | 'nombre' | 'color'> | null;
 };
 
-/** El perfil del usuario y el de la otra persona del espacio. */
+/**
+ * El perfil del usuario y el de la otra persona del espacio. Corre en cada
+ * pantalla, así que va en una sola query: el espacio y el compañero por join.
+ */
 export async function buscarPerfil(userId: string): Promise<PerfilConCompanero | null> {
+  const companero = alias(perfiles, 'companero');
   return comoUsuario(userId, async (tx) => {
-    const [yo] = await tx.select().from(perfiles).where(eq(perfiles.id, userId));
-    if (!yo) return null;
-
-    const [espacio] = await tx
-      .select({ nombre: espacios.nombre })
-      .from(espacios)
-      .where(eq(espacios.id, yo.espacioId));
-
-    const otros = await tx
-      .select({ id: perfiles.id, nombre: perfiles.nombre, color: perfiles.color })
+    const [fila] = await tx
+      .select({
+        yo: perfiles,
+        espacioNombre: espacios.nombre,
+        companero: { id: companero.id, nombre: companero.nombre, color: companero.color },
+      })
       .from(perfiles)
-      .where(eq(perfiles.espacioId, yo.espacioId));
+      .leftJoin(espacios, eq(espacios.id, perfiles.espacioId))
+      .leftJoin(
+        companero,
+        and(eq(companero.espacioId, perfiles.espacioId), ne(companero.id, perfiles.id)),
+      )
+      .where(eq(perfiles.id, userId))
+      .limit(1);
+    if (!fila) return null;
 
     return {
-      ...yo,
-      espacioNombre: espacio?.nombre ?? 'Nuestra libreta',
-      companero: otros.find((p) => p.id !== userId) ?? null,
+      ...fila.yo,
+      espacioNombre: fila.espacioNombre ?? 'Nuestra libreta',
+      companero: fila.companero,
     };
   });
 }
@@ -70,32 +78,22 @@ export type EntradaConPuntajes = EntradaPuntuada & {
 };
 
 /**
- * Le pega los puntajes individuales a las entradas. Son dos queries en vez de un
- * join con `jsonb_agg`: con dos personas y unos cientos de películas la
- * diferencia no se mide, y esto se lee.
+ * Separa los puntajes de una entrada en el mío y el del otro. Van aparte y no
+ * con un `jsonb_agg` en la vista: con dos personas y unos cientos de películas
+ * la diferencia no se mide, y esto se lee.
  */
-async function conPuntajes(
-  tx: Parameters<Parameters<typeof comoUsuario>[1]>[0],
-  filas: EntradaPuntuada[],
+function repartirPuntajes(
+  fila: EntradaPuntuada,
+  suyos: (typeof puntajes.$inferSelect)[],
   userId: string,
-): Promise<EntradaConPuntajes[]> {
-  if (filas.length === 0) return [];
-
-  const todos = await tx
-    .select()
-    .from(puntajes)
-    .where(inArray(puntajes.entradaId, filas.map((f) => f.id)));
-
-  return filas.map((fila) => {
-    const suyos = todos.filter((p) => p.entradaId === fila.id);
-    const mio = suyos.find((p) => p.perfilId === userId) ?? null;
-    const otro = suyos.find((p) => p.perfilId !== userId) ?? null;
-    return {
-      ...fila,
-      mio: mio && { estrellas: mio.estrellas, comentario: mio.comentario },
-      suyo: otro && { estrellas: otro.estrellas, comentario: otro.comentario },
-    };
-  });
+): EntradaConPuntajes {
+  const mio = suyos.find((p) => p.perfilId === userId) ?? null;
+  const otro = suyos.find((p) => p.perfilId !== userId) ?? null;
+  return {
+    ...fila,
+    mio: mio && { estrellas: mio.estrellas, comentario: mio.comentario },
+    suyo: otro && { estrellas: otro.estrellas, comentario: otro.comentario },
+  };
 }
 
 /** La biblioteca: lo que ya vieron, con los filtros de la pantalla aplicados. */
@@ -119,13 +117,28 @@ export async function listarBiblioteca(
       titulo: [asc(vEntradasPuntuadas.titulo)],
     }[filtros.orden ?? 'recientes'];
 
-    const filas = await tx
-      .select()
-      .from(vEntradasPuntuadas)
-      .where(and(...condiciones))
-      .orderBy(...orden);
+    // Los puntajes de todo lo visto van en paralelo con las entradas, no
+    // después: con dos personas son pocas filas, y se ahorra un viaje.
+    const [filas, todos] = await Promise.all([
+      tx
+        .select()
+        .from(vEntradasPuntuadas)
+        .where(and(...condiciones))
+        .orderBy(...orden),
+      tx
+        .select({ puntaje: puntajes })
+        .from(puntajes)
+        .innerJoin(entradas, eq(entradas.id, puntajes.entradaId))
+        .where(eq(entradas.estado, 'vista')),
+    ]);
 
-    return conPuntajes(tx, filas, userId);
+    return filas.map((fila) =>
+      repartirPuntajes(
+        fila,
+        todos.filter((t) => t.puntaje.entradaId === fila.id).map((t) => t.puntaje),
+        userId,
+      ),
+    );
   });
 }
 
@@ -162,28 +175,31 @@ export type Pendiente = Awaited<ReturnType<typeof listarPendientes>>[number];
  */
 export const buscarEntrada = cache(async (userId: string, entradaId: string) => {
   return comoUsuario(userId, async (tx) => {
-    const [fila] = await tx
-      .select()
-      .from(vEntradasPuntuadas)
-      .where(eq(vEntradasPuntuadas.id, entradaId));
+    // Dos queries en paralelo en vez de cuatro en fila: la ficha y quién la
+    // sumó vienen por join, y los puntajes no dependen de nada.
+    const [[fila], suyos] = await Promise.all([
+      tx
+        .select({
+          entrada: getViewSelectedFields(vEntradasPuntuadas),
+          tituloOriginal: peliculas.tituloOriginal,
+          director: peliculas.director,
+          sinopsis: peliculas.sinopsis,
+          agregadaPorNombre: perfiles.nombre,
+        })
+        .from(vEntradasPuntuadas)
+        .leftJoin(peliculas, eq(peliculas.tmdbId, vEntradasPuntuadas.tmdbId))
+        .leftJoin(perfiles, eq(perfiles.id, vEntradasPuntuadas.agregadaPor))
+        .where(eq(vEntradasPuntuadas.id, entradaId)),
+      tx.select().from(puntajes).where(eq(puntajes.entradaId, entradaId)),
+    ]);
     if (!fila) return null;
 
-    const [ficha] = await tx
-      .select({
-        tituloOriginal: peliculas.tituloOriginal,
-        director: peliculas.director,
-        sinopsis: peliculas.sinopsis,
-      })
-      .from(peliculas)
-      .where(eq(peliculas.tmdbId, fila.tmdbId));
-
-    const [conP] = await conPuntajes(tx, [fila], userId);
-    const [quien] = await tx
-      .select({ nombre: perfiles.nombre })
-      .from(perfiles)
-      .where(eq(perfiles.id, fila.agregadaPor));
-
-    return { ...conP!, ...ficha, agregadaPorNombre: quien?.nombre ?? null };
+    const { entrada, agregadaPorNombre, ...ficha } = fila;
+    return {
+      ...repartirPuntajes(entrada, suyos, userId),
+      ...ficha,
+      agregadaPorNombre: agregadaPorNombre ?? null,
+    };
   });
 });
 
