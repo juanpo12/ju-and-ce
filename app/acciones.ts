@@ -30,8 +30,8 @@ import {
  * usuario sale de la sesión, nunca del formulario.
  */
 
-/** Los mismos tres que acepta el check de `perfiles.tema` en la base. */
-const TEMAS = ['papel', 'bullet', 'menta'];
+/** Los mismos que acepta el check de `perfiles.tema` en la base. */
+const TEMAS = ['papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon'];
 
 function refrescar(...rutas: string[]) {
   for (const r of ['/', '/pendientes', '/resumen', ...rutas]) revalidatePath(r);

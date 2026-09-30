@@ -37,7 +37,7 @@ export function FormularioAjustes({ nombre, tema }: { nombre: string; tema: stri
         <legend className="mb-1 text-sm font-semibold text-tinta">Tema</legend>
         {/* El tema se guarda en el perfil, no en el navegador: así cada uno tiene
             el suyo en cualquier dispositivo. */}
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           {TEMAS.map((valor) => {
             const t = { valor, ...PALETAS[valor] };
             return (

@@ -117,7 +117,7 @@ lib/
   supabase/               client (navegador), server (cookies)
   sesion.ts               perfilActual() y exigirPerfil()
   tmdb.ts                 el cliente de TMDB, solo servidor
-styles/temas.css          los dos temas como variables CSS
+styles/temas.css          los temas como variables CSS
 proxy.ts                  refresco de sesión y guardia de rutas
 db/demo.ts                el Postgres de juguete de `npm run demo`
 lib/demo.ts               el interruptor del modo demo
@@ -129,7 +129,7 @@ una decisión nuestra, y hay mucho tutorial desactualizado dando vueltas.
 
 ### Los temas
 
-Tres, y no son modos oscuros: cada uno cambia fondo, tipografía, radios, acento,
+Siete, y no son modos oscuros: cada uno cambia fondo, tipografía, radios, acento,
 textura y hasta los colores con que se distingue a cada persona.
 
 | | Papel y washi | Bullet journal | Menta granizada |
@@ -139,12 +139,21 @@ textura y hasta los colores con que se distingue a cada persona.
 | Texto | Lora | Quicksand | Quicksand |
 | Radio | 0,75 rem | 1 rem | 0,875 rem |
 
+Y cuatro de hadas, uno por cada imagen de inspiración de Ceci:
+
+| | Jardín de hadas | Pradera de luz | Acuarela y estrellas | Guarida del dragón |
+| --- | --- | --- | --- | --- |
+| Fondo | pergamino salvia con destellos dorados | verde luminoso con bokeh | papel con grano y estrellas amarillas | crema durazno, estrellas y luna |
+| Acento | lavanda | rosa | verde salvia | orquídea |
+| Texto | Lora | Figtree | Lora | Lora |
+| Radio | 1,125 rem | 1,25 rem | 0,875 rem | 0,75 rem |
+
 Se guardan en `perfiles.tema`, no en el navegador, así cada uno tiene el suyo en
 cualquier dispositivo. El `data-tema` lo escribe el layout del servidor en el
 primer render: aplicarlo con JavaScript después de montar haría ver un flash del
 tema equivocado.
 
-Para agregar un cuarto hay que tocar cuatro lugares, y el orden importa porque
+Para agregar otro hay que tocar cuatro lugares, y el orden importa porque
 el primero es el que manda:
 
 1. `db/schema.ts` — sumarlo al check `perfiles_tema_valido` y generar la

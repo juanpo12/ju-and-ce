@@ -11,7 +11,7 @@ import { PALETAS, type Tema } from '@/lib/temas';
  *
  * - next-themes pone `.dark` en el <html> antes de pintar, con un script en
  *   línea: por eso el <html> lleva `suppressHydrationWarning`. El tema (papel,
- *   bullet, menta) no pasa por acá, lo escribe el servidor.
+ *   bullet, menta, las de hadas) no pasa por acá, lo escribe el servidor.
  * - `reducedMotion="user"`: con `prefers-reduced-motion`, Motion deja las
  *   opacidades y se saltea los movimientos. El CSS hace lo mismo con el resto.
  */
