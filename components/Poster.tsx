@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 import { urlPoster } from '@/lib/tmdb-url';
 
 const TAMANOS = {
@@ -8,47 +9,30 @@ const TAMANOS = {
 };
 
 /**
- * El póster, o un marcador cuando TMDB no tiene imagen. El marcador es una
- * claqueta y nada más: el título ya está debajo en la tarjeta y al lado en la
- * ficha, así que repetirlo acá solo agrega ruido.
+ * El póster, o uno inventado cuando TMDB no tiene imagen (y en la demo, que no
+ * tiene ninguna). El inventado es un afiche de verdad y no una caja vacía: un
+ * degradado cuyo tono sale del título, así cada peli tiene el suyo y es siempre
+ * el mismo, con el título en letra de marquesina.
  */
 export function Poster({
   path,
   titulo,
+  anio,
   tamano = 'grilla',
   prioridad = false,
+  className,
 }: {
   path: string | null | undefined;
   titulo: string;
+  anio?: number | null;
   tamano?: keyof typeof TAMANOS;
   prioridad?: boolean;
+  className?: string;
 }) {
   const { ancho, w, h } = TAMANOS[tamano];
   const url = urlPoster(path, ancho);
 
-  if (!url) {
-    return (
-      <div
-        className="flex aspect-[2/3] w-full items-center justify-center bg-acento-suave"
-        style={{ borderRadius: 'inherit' }}
-        role="img"
-        aria-label={`Sin póster de ${titulo}`}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className="size-1/4 max-w-16 opacity-40"
-          fill="none"
-          stroke="var(--tinta-suave)"
-          strokeWidth={1.4}
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <rect x="2.5" y="6" width="19" height="13" rx="2" />
-          <path d="M2.5 10h19M7 6L5 10M12 6l-2 4M17 6l-2 4" />
-        </svg>
-      </div>
-    );
-  }
+  if (!url) return <PosterInventado titulo={titulo} anio={anio} className={className} />;
 
   return (
     <Image
@@ -57,9 +41,81 @@ export function Poster({
       width={w}
       height={h}
       priority={prioridad}
-      sizes={tamano === 'grilla' ? '(min-width: 768px) 220px, 45vw' : undefined}
-      className="aspect-[2/3] w-full object-cover"
+      sizes={
+        tamano === 'grilla'
+          ? '(min-width: 1280px) 200px, (min-width: 768px) 25vw, 45vw'
+          : tamano === 'ficha'
+            ? '(min-width: 768px) 288px, 60vw'
+            : '96px'
+      }
+      className={cn('aspect-[2/3] w-full object-cover', className)}
       style={{ borderRadius: 'inherit' }}
     />
+  );
+}
+
+/** Un número estable a partir del título: la misma peli, el mismo tono. */
+export function tonoDe(titulo: string) {
+  let h = 0;
+  for (const c of titulo) h = (h * 31 + c.codePointAt(0)!) >>> 0;
+  return h % 360;
+}
+
+/**
+ * Los colores salen de oklch con luminosidad fija: el tono cambia de peli en peli
+ * pero el contraste del título no — texto a L 0,96 sobre fondo a L ≤ 0,42 pasa
+ * AA siempre. Es la única superficie que no sigue al tema a propósito: un afiche
+ * es oscuro en los dos modos, como en la puerta del cine.
+ */
+function PosterInventado({
+  titulo,
+  anio,
+  className,
+}: {
+  titulo: string;
+  anio?: number | null;
+  className?: string;
+}) {
+  const t = tonoDe(titulo);
+  // Dos capas: las unidades `cqw` se resuelven contra el contenedor *ancestro*,
+  // así que el que declara `@container` no puede ser el mismo que las usa.
+  return (
+    <div
+      role="img"
+      aria-label={`${titulo}, sin póster`}
+      className={cn('@container relative aspect-[2/3] w-full overflow-hidden', className)}
+      style={{
+        borderRadius: 'inherit',
+        color: `oklch(0.96 0.02 ${t})`,
+        backgroundImage: [
+          // Un reflector desde arriba, como luz de marquesina.
+          `radial-gradient(120% 70% at 50% -10%, oklch(0.62 0.12 ${t} / 0.55), transparent 60%)`,
+          `linear-gradient(165deg, oklch(0.42 0.09 ${t}) 0%, oklch(0.24 0.06 ${(t + 40) % 360}) 100%)`,
+        ].join(','),
+      }}
+    >
+      <div className="absolute inset-0 flex flex-col justify-end p-[9cqw]">
+        {/* El filete de afiche viejo, inset para que no toque el borde redondeado. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-[4.5cqw] rounded-[calc(var(--radio)*0.6)] border opacity-25"
+          style={{ borderColor: 'currentColor' }}
+        />
+        <span
+          aria-hidden
+          className="relative line-clamp-4 pt-[0.15em] font-cartel text-[17cqw] uppercase leading-[0.9] tracking-wide [text-wrap:balance]"
+        >
+          {titulo}
+        </span>
+        {anio && (
+          <span
+            aria-hidden
+            className="relative mt-[3cqw] font-cartel text-[9cqw] tracking-[0.2em] opacity-70"
+          >
+            {anio}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

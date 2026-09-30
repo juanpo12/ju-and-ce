@@ -14,6 +14,7 @@ import {
   type EntradaPuntuada,
   type Perfil,
 } from './index';
+import { hoyISO, ZONA_LIBRETA } from '@/lib/fechas';
 
 /* ---------------------------------------------------------------------------
    Todo el acceso a datos vive acá, no disperso entre componentes.
@@ -380,5 +381,5 @@ export async function fichaGuardada(tmdbId: number) {
 }
 
 function hoy() {
-  return new Date().toISOString().slice(0, 10);
+  return hoyISO(ZONA_LIBRETA);
 }

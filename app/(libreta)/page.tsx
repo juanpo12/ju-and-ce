@@ -1,4 +1,6 @@
 import { exigirPerfil } from '@/lib/sesion';
+import { personasDe } from '@/lib/personas';
+import { ItemEscalonado } from '@/components/Escalonado';
 import { listarBiblioteca, opcionesDeFiltro, type Filtros } from '@/db/queries';
 import { TarjetaPeli } from '@/components/TarjetaPeli';
 import { Vacio } from '@/components/Vacio';
@@ -29,16 +31,14 @@ export default async function Biblioteca({
     opcionesDeFiltro(perfil.id),
   ]);
 
+  const { yo, otro } = personasDe(perfil);
   const hayFiltros = Boolean(filtros.genero || filtros.anio || filtros.puntajeMinimo);
 
   return (
     <>
-      <header className="mb-5 flex items-end justify-between gap-4">
+      <header className="mb-4 flex items-end justify-between gap-4">
         <div>
-          {/* En desktop el nombre del espacio ya está en la sidebar. */}
-          <h1 className="font-titulo text-4xl leading-none text-tinta md:text-5xl">
-            Biblioteca
-          </h1>
+          <h1 className="font-titulo text-5xl leading-none text-tinta md:text-6xl">Biblioteca</h1>
           <p className="mt-1 text-sm text-tinta-suave">
             {entradas.length === 0
               ? 'Todavía no hay nada'
@@ -46,7 +46,8 @@ export default async function Biblioteca({
             {hayFiltros && ' con estos filtros'}
           </p>
         </div>
-        <BotonLink href="/agregar" className="shrink-0">
+        {/* En mobile, agregar ya está en el centro de la barra de abajo. */}
+        <BotonLink href="/agregar" className="hidden shrink-0 md:inline-flex">
           Agregar
         </BotonLink>
       </header>
@@ -57,6 +58,7 @@ export default async function Biblioteca({
         <div className="mt-8">
           {hayFiltros ? (
             <Vacio
+              dibujo="lupa"
               titulo="Nada con esos filtros"
               texto="Probá aflojar alguno: capaz todavía no vieron ninguna que cumpla."
               accion={
@@ -67,6 +69,7 @@ export default async function Biblioteca({
             />
           ) : (
             <Vacio
+              dibujo="rollo"
               titulo="Acá va a estar todo"
               texto="Cada película que vean queda guardada con el puntaje y el comentario de los dos. Empezá por la primera."
               accion={<BotonLink href="/agregar">Agregar una película</BotonLink>}
@@ -74,16 +77,19 @@ export default async function Biblioteca({
           )}
         </div>
       ) : (
-        <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5">
+        <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 md:gap-x-5 md:gap-y-7 xl:grid-cols-5">
           {entradas.map((entrada, i) => (
-            <li key={entrada.id} className="contents">
-              <TarjetaPeli
-                entrada={entrada}
-                miNombre={perfil.nombre}
-                suNombre={perfil.companero?.nombre ?? null}
-                prioridad={i < 4}
-              />
-            </li>
+            // `data-entrada` es lo que busca EscuchaCambios para resaltar la
+            // tarjeta cuando el otro puntúa.
+            <ItemEscalonado
+              key={entrada.id}
+              indice={i}
+              data-entrada={entrada.id}
+              data-titulo={entrada.titulo}
+              className="rounded-tema"
+            >
+              <TarjetaPeli entrada={entrada} yo={yo} otro={otro} prioridad={i < 4} />
+            </ItemEscalonado>
           ))}
         </ul>
       )}

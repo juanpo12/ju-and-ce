@@ -1,7 +1,7 @@
 /**
  * El rating de media en media estrella.
  *
- * El relleno parcial se hace con dos capas y `overflow: hidden`, no con un
+ * El relleno parcial se hace con dos capas y un `clip-path`, no con un
  * `linearGradient`: un gradiente necesita un id único por instancia, y eso
  * obligaría a `useId()` — o sea a convertir en cliente un componente que aparece
  * cinco veces por tarjeta. Así lo renderiza el servidor y no baja un byte de JS.
@@ -36,9 +36,11 @@ export function Estrella({
       <svg viewBox="0 0 24 24" className={`${tamano} absolute inset-0`} fill="var(--estrella-vacia)">
         <path d={PUNTAS} />
       </svg>
+      {/* clip-path y no width: se anima sin mover nada de lugar, así el relleno
+          de las estrellas editables corre suave de una a otra. */}
       <span
-        className="absolute inset-0 overflow-hidden"
-        style={{ width: `${recorte}%` }}
+        className="absolute inset-0 transition-[clip-path] duration-150 ease-salida"
+        style={{ clipPath: `inset(0 ${100 - recorte}% 0 0)` }}
       >
         <svg viewBox="0 0 24 24" className={`${tamano} absolute inset-y-0 left-0`} fill="var(--acento)">
           <path d={PUNTAS} />

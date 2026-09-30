@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { CalendarDays, MapPin } from 'lucide-react';
 import { Boton } from '@/components/Boton';
+import { DialogoAdaptable } from '@/components/DialogoAdaptable';
+import { hoyISO } from '@/lib/fechas';
 import { accionBorrarEntrada, accionEditarEntrada, accionMarcarVista } from '@/app/acciones';
 
 /** La fecha, el lugar, y el paso de pendiente a vista. */
@@ -26,7 +29,7 @@ export function DatosDeLaFuncion({
     return (
       <section className="tarjeta flex flex-col gap-3 px-4 py-4">
         <div>
-          <h2 className="font-titulo text-2xl text-tinta">Todavía pendiente</h2>
+          <h2 className="font-titulo text-3xl text-tinta">Todavía pendiente</h2>
           {agregadaPor && (
             <p className="text-sm text-tinta-suave">La sumó {agregadaPor} a la lista.</p>
           )}
@@ -35,7 +38,7 @@ export function DatosDeLaFuncion({
           action={(fd) => empezar(() => accionMarcarVista(entradaId, fd))}
           className="flex flex-col gap-3"
         >
-          <Campos vistaEl={hoy()} lugar="" />
+          <Campos vistaEl={hoyISO()} lugar="" />
           <Boton type="submit" disabled={pendiente} className="w-fit">
             {pendiente ? 'Guardando…' : 'Ya la vimos'}
           </Boton>
@@ -47,13 +50,19 @@ export function DatosDeLaFuncion({
   return (
     <section className="tarjeta flex flex-col gap-3 px-4 py-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-titulo text-2xl text-tinta">La función</h2>
-          <p className="text-sm text-tinta-suave">
+        <div className="flex flex-col gap-1.5">
+          <h2 className="font-titulo text-3xl text-tinta">La función</h2>
+          <p className="flex items-center gap-2 text-sm text-tinta">
+            <CalendarDays className="size-4 shrink-0 text-acento" aria-hidden />
             {vistaEl ? fecha(vistaEl) : 'Sin fecha'}
-            {lugar && ` · ${lugar}`}
           </p>
-          {agregadaPor && <p className="text-xs text-tinta-suave/80">La sumó {agregadaPor}</p>}
+          {lugar && (
+            <p className="flex items-center gap-2 text-sm text-tinta">
+              <MapPin className="size-4 shrink-0 text-acento" aria-hidden />
+              {lugar}
+            </p>
+          )}
+          {agregadaPor && <p className="text-xs text-tinta-suave">La sumó {agregadaPor}</p>}
         </div>
         {!editando && (
           <Boton type="button" variante="fantasma" onClick={() => setEditando(true)}>
@@ -85,35 +94,38 @@ export function DatosDeLaFuncion({
       )}
 
       <div className="mt-1 border-t border-borde pt-3">
-        {confirmando ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-tinta">
-              ¿Sacarla de la libreta? Se van los dos puntajes.
-            </span>
-            <Boton
-              type="button"
-              onClick={() => empezar(() => accionBorrarEntrada(entradaId))}
-              disabled={pendiente}
-            >
-              Sí, sacarla
-            </Boton>
-            <Boton type="button" variante="fantasma" onClick={() => setConfirmando(false)}>
-              No
-            </Boton>
-          </div>
-        ) : (
-          <Boton type="button" variante="fantasma" onClick={() => setConfirmando(true)}>
-            Sacar de la libreta
-          </Boton>
-        )}
+        <Boton type="button" variante="fantasma" onClick={() => setConfirmando(true)}>
+          Sacar de la libreta
+        </Boton>
       </div>
+
+      <DialogoAdaptable
+        abierto={confirmando}
+        onCambio={setConfirmando}
+        titulo="¿Sacarla de la libreta?"
+        descripcion="Se van también los dos puntajes y los comentarios. No se puede deshacer."
+      >
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          <Boton type="button" variante="secundario" onClick={() => setConfirmando(false)}>
+            No, dejarla
+          </Boton>
+          <Boton
+            type="button"
+            onClick={() => empezar(() => accionBorrarEntrada(entradaId))}
+            disabled={pendiente}
+            className="bg-destructive text-sobre-destructivo"
+          >
+            {pendiente ? 'Sacando…' : 'Sí, sacarla'}
+          </Boton>
+        </div>
+      </DialogoAdaptable>
     </section>
   );
 }
 
 function Campos({ vistaEl, lugar }: { vistaEl: string; lugar: string }) {
   const input =
-    'foco rounded-tema border border-borde bg-fondo px-3 py-2 text-sm text-tinta outline-none';
+    'foco rounded-tema border border-borde bg-fondo/60 px-3 py-2 text-base text-tinta outline-none transition-colors focus:border-acento';
   return (
     <div className="flex flex-wrap gap-3">
       <label className="flex flex-col gap-1">
@@ -132,10 +144,6 @@ function Campos({ vistaEl, lugar }: { vistaEl: string; lugar: string }) {
       </label>
     </div>
   );
-}
-
-function hoy() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function fecha(iso: string) {

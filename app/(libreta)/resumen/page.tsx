@@ -1,8 +1,9 @@
 import { exigirPerfil } from '@/lib/sesion';
 import { contarPorGenero, distribucionDePuntajes, traerResumen } from '@/db/queries';
-import { Estrellas, formatear } from '@/components/Estrellas';
 import { Vacio } from '@/components/Vacio';
 import { BotonLink } from '@/components/Boton';
+import { Contador } from '@/components/Contador';
+import { GraficoGeneros, GraficoPuntajes } from './Graficos';
 
 export const metadata = { title: 'Resumen — Nuestra libreta' };
 
@@ -20,8 +21,9 @@ export default async function Resumen() {
   if (!numeros.vistas) {
     return (
       <>
-        <h1 className="mb-5 font-titulo text-4xl leading-none text-tinta md:text-5xl">Resumen</h1>
+        <h1 className="mb-5 font-titulo text-5xl leading-none text-tinta md:text-6xl">Resumen</h1>
         <Vacio
+          dibujo="pochoclos"
           titulo="Todavía no hay números"
           texto="Cuando empiecen a puntuar películas, acá van a aparecer los totales, los géneros y en cuántas coincidieron."
           accion={<BotonLink href="/agregar">Agregar la primera</BotonLink>}
@@ -33,85 +35,72 @@ export default async function Resumen() {
   return (
     <>
       <header className="mb-5">
-        <h1 className="font-titulo text-4xl leading-none text-tinta md:text-5xl">Resumen</h1>
+        <h1 className="font-titulo text-5xl leading-none text-tinta md:text-6xl">Resumen</h1>
         <p className="mt-1 text-sm text-tinta-suave">{perfil.espacioNombre}</p>
       </header>
 
-      {/* Mobile: tarjetas apiladas de a dos. Desktop: grilla de 2×2. */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4">
-        <Numero valor={String(numeros.vistas)} etiqueta="películas vistas" />
-        <Numero
-          valor={numeros.promedio !== null ? formatear(numeros.promedio) : '—'}
-          etiqueta="promedio general"
-        />
-        <Numero valor={numeros.horas !== null ? `${numeros.horas}` : '—'} etiqueta="horas juntos" />
-        <Numero
-          valor={String(numeros.coincidimos)}
-          etiqueta={`puntuaron los dos`}
-        />
+      {/* Mobile: de a dos. Desktop: los cuatro en fila, como una marquesina. */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <Numero etiqueta="películas vistas" destacado>
+          <Contador valor={numeros.vistas} />
+        </Numero>
+        <Numero etiqueta="promedio general">
+          {numeros.promedio !== null ? <Contador valor={numeros.promedio} decimales={1} /> : '—'}
+        </Numero>
+        <Numero etiqueta="horas juntos">
+          {numeros.horas !== null ? <Contador valor={numeros.horas} /> : '—'}
+        </Numero>
+        <Numero etiqueta="puntuaron los dos">
+          <Contador valor={numeros.coincidimos} />
+        </Numero>
       </div>
 
-      {distribucion.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-3 font-titulo text-2xl text-tinta">Cómo puntuamos</h2>
-          <div className="tarjeta flex flex-col gap-2 px-4 py-4">
-            {distribucion
-              .slice()
-              .reverse()
-              .map(({ estrellas, cantidad }) => (
-                <div key={estrellas} className="flex items-center gap-3">
-                  <Estrellas valor={estrellas} medida="chico" className="w-24 shrink-0" />
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-acento-suave">
-                    <div
-                      className="h-full rounded-full bg-acento"
-                      style={{ width: `${(cantidad / maximo(distribucion)) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-6 shrink-0 text-right text-xs tabular-nums text-tinta-suave">
-                    {cantidad}
-                  </span>
-                </div>
-              ))}
-          </div>
-        </section>
-      )}
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        {distribucion.length > 0 && (
+          <section>
+            <h2 className="mb-2 font-titulo text-3xl text-tinta">Cómo puntuamos</h2>
+            <div className="tarjeta px-3 pb-2 pt-3">
+              <GraficoPuntajes datos={distribucion} />
+            </div>
+          </section>
+        )}
 
-      {generos.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-3 font-titulo text-2xl text-tinta">Qué miramos</h2>
-          <ul className="tarjeta flex flex-col divide-y divide-borde px-4">
-            {generos.slice(0, 10).map(({ genero, cantidad }) => (
-              <li key={genero} className="flex items-center justify-between gap-3 py-2.5">
-                <span className="text-sm text-tinta">{genero}</span>
-                <div className="flex flex-1 items-center gap-3">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-acento-suave">
-                    <div
-                      className="h-full rounded-full bg-acento"
-                      style={{ width: `${(cantidad / generos[0]!.cantidad) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-6 shrink-0 text-right text-xs tabular-nums text-tinta-suave">
-                    {cantidad}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        {generos.length > 0 && (
+          <section>
+            <h2 className="mb-2 font-titulo text-3xl text-tinta">Qué miramos</h2>
+            <div className="tarjeta px-3 py-3">
+              <GraficoGeneros datos={generos} />
+            </div>
+          </section>
+        )}
+      </div>
     </>
   );
 }
 
-function Numero({ valor, etiqueta }: { valor: string; etiqueta: string }) {
+function Numero({
+  etiqueta,
+  destacado = false,
+  children,
+}: {
+  etiqueta: string;
+  destacado?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="tarjeta flex flex-col items-center gap-0.5 px-3 py-6 text-center">
-      <span className="font-titulo text-5xl leading-none text-acento">{valor}</span>
-      <span className="text-xs text-tinta-suave">{etiqueta}</span>
+    <div
+      className={
+        destacado
+          ? 'flex flex-col items-center gap-1 rounded-tema bg-acento px-3 py-5 text-center text-sobre-acento shadow-alta'
+          : 'tarjeta flex flex-col items-center gap-1 px-3 py-5 text-center'
+      }
+    >
+      <span
+        className={`font-cartel text-6xl leading-none tracking-wide ${destacado ? '' : 'text-acento'}`}
+      >
+        {children}
+      </span>
+      <span className={`text-xs ${destacado ? 'opacity-85' : 'text-tinta-suave'}`}>{etiqueta}</span>
     </div>
   );
-}
-
-function maximo(filas: { cantidad: number }[]) {
-  return Math.max(...filas.map((f) => f.cantidad), 1);
 }

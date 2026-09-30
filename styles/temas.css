@@ -1,140 +1,364 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* `.dark` lo pone next-themes en el <html>. `:where` deja la especificidad en
+   cero, así un `dark:` no le gana a una clase escrita a mano. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Los dos temas.
+   Los temas son dos ejes independientes:
 
-   El tema no es un modo oscuro: cambia fondo, tipografía, radios y acento.
-   Ningún componente escribe un hex a mano — todo sale de estas variables.
+   - `data-tema` (papel, bullet, menta): la personalidad. Fondo, textura, acento,
+     radio. Se guarda en `perfiles.tema` y lo escribe el layout del servidor en el
+     primer render, así no hay flash del tema equivocado.
+   - `.dark`: el modo. En claro es una libreta de papel; en oscuro, una sala de
+     cine con las luces bajas. Lo maneja next-themes y vive en el navegador.
 
-   El atributo `data-tema` va en el <html> y lo escribe el layout del servidor,
-   leyendo `perfiles.tema`. Aplicarlo con JavaScript después de montar haría
-   ver un flash del tema equivocado.
+   Tres por dos, seis paletas. El acento es el mismo tono en los dos modos: en
+   oscuro sube de luminosidad para no perderse, nunca cambia de familia.
+
+   Ningún componente escribe un hex a mano — todo sale de estas variables. Los
+   hex de la barra del navegador están en `lib/temas.ts`, y tienen que coincidir
+   con los `--fondo` de acá.
+
+   Contrastes (WCAG AA, calculados): tinta sobre fondo ≥ 12:1, tinta suave sobre
+   superficie ≥ 6:1, acento y colores de persona sobre superficie ≥ 4,5:1, texto
+   de botón sobre acento ≥ 5:1, en las seis.
 --------------------------------------------------------------------------- */
 
 :root,
 [data-tema='papel'] {
   --fondo: #f5efe1;
   --superficie: #fffcf4;
+  --superficie-alta: #ffffff;
   --tinta: #2b2620;
   --tinta-suave: #5c5348;
-  --acento: #c2562f;
+  --acento: #b44d28;
+  --sobre-acento: #ffffff;
   --acento-suave: #f0d9cd;
   --borde: #e0d5be;
   --estrella-vacia: #cfc3ac;
   --radio: 0.75rem;
-  --tipo-titulo: var(--font-caveat), cursive;
-  --tipo-texto: var(--font-lora), Georgia, serif;
 
-  /* Los colores de las personas también cambian entre un tema y el otro. */
-  --durazno: #e8956b;
-  --menta: #6bab92;
+  /* Juan y Ceci. El nombre es el valor de `perfiles.color`, no el tono: acá
+     «durazno» es ocre, porque un durazno sería el mismo terracota que el acento
+     y no se distinguiría una estrella de una persona. */
+  --durazno: #8a5f0c;
+  --menta: #36725b;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--font-lora), Georgia, serif;
 
   /* Renglones de cuaderno. Sin imágenes, sin peso, escala a cualquier pantalla. */
+  --linea: #e3d8c2;
   --textura: repeating-linear-gradient(
     to bottom,
     transparent 0,
     transparent 1.7rem,
-    #e3d8c2 1.7rem,
-    #e3d8c2 calc(1.7rem + 1px)
+    var(--linea) 1.7rem,
+    var(--linea) calc(1.7rem + 1px)
   );
   --textura-tamano: auto;
+
+  /* Sombras con tinte de tinta, no negras: sobre crema una sombra gris se ve sucia. */
+  --sombra-baja: 0 1px 2px rgb(60 40 20 / 0.06), 0 2px 6px rgb(60 40 20 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(60 40 20 / 0.06), 0 14px 32px -10px rgb(60 40 20 / 0.28);
+
+  /* Lo que oscurece la pantalla detrás de un diálogo. Tinta y no negro: sobre
+     papel, un negro al 50% se ve sucio. */
+  --velo: rgb(43 38 32 / 0.4);
+}
+
+.dark[data-tema='papel'],
+.dark:not([data-tema]) {
+  /* El marrón de una sala con butacas de madera, no un gris. */
+  --fondo: #1c1714;
+  --superficie: #27201c;
+  --superficie-alta: #312923;
+  --tinta: #f3ebdf;
+  --tinta-suave: #b8ab99;
+  --acento: #e8894f;
+  --sobre-acento: #1c1714;
+  --acento-suave: #3d2a20;
+  --borde: #3a302a;
+  --estrella-vacia: #4a3f37;
+
+  --durazno: #e6b85c;
+  --menta: #86c7aa;
+  --sobre-persona: #1c1714;
+
+  --linea: #241d19;
 }
 
 [data-tema='bullet'] {
   --fondo: #fbfaf7;
   --superficie: #ffffff;
+  --superficie-alta: #ffffff;
   --tinta: #35323f;
-  --tinta-suave: #6b6779;
-  --acento: #7d6bc4;
+  --tinta-suave: #625e70;
+  --acento: #6a57b8;
+  --sobre-acento: #ffffff;
   --acento-suave: #e6e1f5;
   --borde: #ece9f4;
   --estrella-vacia: #d9d5e6;
   --radio: 1rem;
-  --tipo-titulo: var(--font-caveat), cursive;
-  --tipo-texto: var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
 
-  --durazno: #e0906f;
-  --menta: #5fa98f;
+  --durazno: #b5582f;
+  --menta: #2f7e64;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--tipo-texto);
 
   /* Grilla de puntos de bullet journal. */
-  --textura: radial-gradient(circle at 1px 1px, #dedae9 1px, transparent 0);
+  --linea: #dedae9;
+  --textura: radial-gradient(circle at 1px 1px, var(--linea) 1px, transparent 0);
   --textura-tamano: 1.5rem 1.5rem;
+
+  --sombra-baja: 0 1px 2px rgb(40 30 80 / 0.05), 0 2px 6px rgb(40 30 80 / 0.04);
+  --sombra-alta: 0 2px 4px rgb(40 30 80 / 0.05), 0 14px 32px -10px rgb(40 30 80 / 0.22);
+}
+
+.dark[data-tema='bullet'] {
+  /* Azul noche: la hoja punteada a la luz del proyector. */
+  --fondo: #14141d;
+  --superficie: #1e1e2b;
+  --superficie-alta: #272737;
+  --tinta: #eeecf6;
+  --tinta-suave: #a9a5bd;
+  --acento: #ab9cf0;
+  --sobre-acento: #14141d;
+  --acento-suave: #2c2848;
+  --borde: #2e2d40;
+  --estrella-vacia: #3b3a50;
+
+  --durazno: #f2a584;
+  --menta: #7ccaae;
+  --sobre-persona: #14141d;
+
+  --linea: #252433;
 }
 
 [data-tema='menta'] {
   --fondo: #e4f2ea;
   --superficie: #f9fdfb;
+  --superficie-alta: #ffffff;
   /* La tinta es el chocolate del granizado, no un gris. */
   --tinta: #2a231d;
-  --tinta-suave: #5d5147;
+  --tinta-suave: #554a41;
   --acento: #17795c;
+  --sobre-acento: #ffffff;
   --acento-suave: #cbe8da;
   --borde: #c9e2d4;
   --estrella-vacia: #b4d2c2;
   --radio: 0.875rem;
-  --tipo-titulo: var(--font-caveat), cursive;
-  --tipo-texto: var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
 
-  /* Acá los colores de las personas no pueden ser durazno y menta: el segundo
-     se perdería contra el fondo y contra el acento. Menta pasa a ser el cacao
-     del granizado, que además es lo que le da el nombre al tema. */
-  --durazno: #e0824c;
-  --menta: #8b5e3c;
+  /* Acá el segundo color no puede ser menta: se perdería contra el fondo y
+     contra el acento. Tampoco cacao, que al lado del durazno se lee como el
+     mismo marrón. Pasa a uva, lejos de los dos. */
+  --durazno: #b0501d;
+  --menta: #6b55b5;
+  --sobre-persona: #ffffff;
 
-  /* Los chips del granizado. Son elipses, no círculos, y con los radios
-     cruzados (unas anchas, otras altas): un chip de chocolate es una escama
-     irregular, y una grilla de puntos perfectos se lee como bullet journal, que
-     es justo el otro tema. El tile de 130px con trece chips da densidad sin
-     volverse ruido debajo del texto. El marrón va saturado y no casi-negro:
-     sobre el verde, un gris oscuro translúcido se lee gris, no chocolate. */
+  --tipo-cita: var(--tipo-texto);
+
+  /* Los chips del granizado. Son elipses con los radios cruzados (unas anchas,
+     otras altas): un chip es una escama irregular, y una grilla de puntos
+     perfectos se lee como bullet journal, que es justo el otro tema. */
+  --chip: #4a2c18;
   --textura:
-    radial-gradient(ellipse 3.3px 2.5px at 12% 18%, #4a2c18a6 0 99%, transparent 0),
-    radial-gradient(ellipse 2.0px 2.9px at 68% 9%, #4a2c1891 0 99%, transparent 0),
-    radial-gradient(ellipse 2.9px 2.0px at 41% 52%, #4a2c18a0 0 99%, transparent 0),
-    radial-gradient(ellipse 1.6px 2.0px at 88% 61%, #4a2c1882 0 99%, transparent 0),
-    radial-gradient(ellipse 2.5px 3.3px at 7% 74%, #4a2c189a 0 99%, transparent 0),
-    radial-gradient(ellipse 2.0px 1.6px at 55% 84%, #4a2c187a 0 99%, transparent 0),
-    radial-gradient(ellipse 1.6px 2.5px at 31% 33%, #4a2c188b 0 99%, transparent 0),
-    radial-gradient(ellipse 2.9px 2.0px at 93% 27%, #4a2c1897 0 99%, transparent 0),
-    radial-gradient(ellipse 2.0px 2.5px at 77% 44%, #4a2c1885 0 99%, transparent 0),
-    radial-gradient(ellipse 2.5px 1.6px at 22% 94%, #4a2c188e 0 99%, transparent 0),
-    radial-gradient(ellipse 1.6px 2.0px at 61% 67%, #4a2c187d 0 99%, transparent 0),
-    radial-gradient(ellipse 3.3px 2.0px at 47% 14%, #4a2c18a3 0 99%, transparent 0),
-    radial-gradient(ellipse 2.0px 2.9px at 84% 88%, #4a2c1888 0 99%, transparent 0);
+    radial-gradient(ellipse 3.3px 2.5px at 12% 18%, color-mix(in srgb, var(--chip) 65%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2px 2.9px at 68% 9%, color-mix(in srgb, var(--chip) 57%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2.9px 2px at 41% 52%, color-mix(in srgb, var(--chip) 63%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 1.6px 2px at 88% 61%, color-mix(in srgb, var(--chip) 51%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2.5px 3.3px at 7% 74%, color-mix(in srgb, var(--chip) 60%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2px 1.6px at 55% 84%, color-mix(in srgb, var(--chip) 48%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 1.6px 2.5px at 31% 33%, color-mix(in srgb, var(--chip) 55%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2.9px 2px at 93% 27%, color-mix(in srgb, var(--chip) 59%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2px 2.5px at 77% 44%, color-mix(in srgb, var(--chip) 52%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2.5px 1.6px at 22% 94%, color-mix(in srgb, var(--chip) 56%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 1.6px 2px at 61% 67%, color-mix(in srgb, var(--chip) 49%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 3.3px 2px at 47% 14%, color-mix(in srgb, var(--chip) 64%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2px 2.9px at 84% 88%, color-mix(in srgb, var(--chip) 53%, transparent) 0 99%, transparent 0);
   --textura-tamano: 130px 130px;
+
+  --sombra-baja: 0 1px 2px rgb(20 50 40 / 0.06), 0 2px 6px rgb(20 50 40 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(20 50 40 / 0.06), 0 14px 32px -10px rgb(20 50 40 / 0.25);
+}
+
+.dark[data-tema='menta'] {
+  /* Verde bosque: el granizado de noche. */
+  --fondo: #111a16;
+  --superficie: #1a2621;
+  --superficie-alta: #22302a;
+  --tinta: #ebf4ef;
+  --tinta-suave: #a2b9ae;
+  --acento: #5cc79d;
+  --sobre-acento: #111a16;
+  --acento-suave: #1d3a2f;
+  --borde: #2a3b33;
+  --estrella-vacia: #33463d;
+
+  --durazno: #f29d66;
+  --menta: #b7a8f5;
+  --sobre-persona: #111a16;
+
+  /* Sobre verde oscuro, el chip se lee como una sombra: más claro y más tenue. */
+  --chip: #3b5a4c;
+}
+
+/* En oscuro las capas se marcan con luminosidad, no con sombra — una sombra
+   negra sobre casi negro no se ve. Queda solo un filo de luz arriba. */
+.dark {
+  color-scheme: dark;
+  --sombra-baja: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 1px 2px rgb(0 0 0 / 0.35);
+  --sombra-alta: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 16px 36px -12px rgb(0 0 0 / 0.7);
+  --velo: rgb(0 0 0 / 0.6);
+}
+
+/* ---------------------------------------------------------------------------
+   Lo que no cambia entre temas: tipografía y movimiento.
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --tipo-titulo: var(--font-caveat), cursive;
+  --tipo-cartel: var(--font-bebas), Impact, sans-serif;
+  --tipo-texto: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+
+  /* Cortas: esto se usa desde el celular, y una animación de 400ms se siente
+     como una app lenta, no como una app linda. */
+  --dur-rapida: 150ms;
+  --dur-base: 220ms;
+  --dur-lenta: 300ms;
+  --ease-salida: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-entrada-salida: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-rebote: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Los nombres que esperan los componentes de shadcn, apuntando a los nuestros.
+     Así un <Dialog> o un <Drawer> de components/ui hereda el tema sin tocarlo. */
+  --background: var(--fondo);
+  --foreground: var(--tinta);
+  --card: var(--superficie);
+  --card-foreground: var(--tinta);
+  --popover: var(--superficie-alta);
+  --popover-foreground: var(--tinta);
+  --primary: var(--acento);
+  --primary-foreground: var(--sobre-acento);
+  --secondary: var(--acento-suave);
+  --secondary-foreground: var(--tinta);
+  --muted: var(--acento-suave);
+  --muted-foreground: var(--tinta-suave);
+  --accent: var(--acento-suave);
+  --accent-foreground: var(--tinta);
+  --destructive: #c0392b;
+  --sobre-destructivo: #ffffff;
+  --border: var(--borde);
+  --input: var(--borde);
+  --ring: var(--acento);
+  --radius: var(--radio);
+  --chart-1: var(--acento);
+  --chart-2: var(--durazno);
+  --chart-3: var(--menta);
+}
+
+.dark {
+  --destructive: #f07a6a;
+  --sobre-destructivo: #1a1210;
 }
 
 /* ---------------------------------------------------------------------------
    Las variables entran al motor de Tailwind con `@theme inline`, así podemos
-   escribir `bg-fondo` o `text-tinta` como si fueran colores propios en vez de
-   `bg-[var(--fondo)]` por toda la app.
+   escribir `bg-fondo` o `text-tinta` en vez de `bg-[var(--fondo)]`.
 
-   `inline` es la parte que importa: hace que la utilidad emita `var(--fondo)`
-   en vez de copiar el valor, que es lo que permite que el tema cambie.
+   `inline` es la parte que importa: la utilidad emite `var(--fondo)` en vez de
+   copiar el valor, que es lo que permite que el tema cambie.
 --------------------------------------------------------------------------- */
 @theme inline {
   --color-fondo: var(--fondo);
   --color-superficie: var(--superficie);
+  --color-superficie-alta: var(--superficie-alta);
   --color-tinta: var(--tinta);
   --color-tinta-suave: var(--tinta-suave);
   --color-acento: var(--acento);
+  --color-sobre-acento: var(--sobre-acento);
   --color-acento-suave: var(--acento-suave);
   --color-borde: var(--borde);
   --color-estrella-vacia: var(--estrella-vacia);
   --color-durazno: var(--durazno);
   --color-menta: var(--menta);
+  --color-sobre-persona: var(--sobre-persona);
+  --color-velo: var(--velo);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-sobre-destructivo: var(--sobre-destructivo);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
 
   --radius-tema: var(--radio);
+  --radius-sm: calc(var(--radio) - 4px);
+  --radius-md: calc(var(--radio) - 2px);
+  --radius-lg: var(--radio);
+  --radius-xl: calc(var(--radio) + 4px);
+
+  --shadow-baja: var(--sombra-baja);
+  --shadow-alta: var(--sombra-alta);
 
   --font-titulo: var(--tipo-titulo);
+  --font-cartel: var(--tipo-cartel);
   --font-texto: var(--tipo-texto);
+  --font-cita: var(--tipo-cita);
+
+  --ease-salida: var(--ease-salida);
+  --ease-rebote: var(--ease-rebote);
+
+  --animate-brillo: brillo 1.6s var(--ease-entrada-salida) infinite;
+  --animate-resaltar: resaltar 1.4s var(--ease-salida);
+}
+
+@keyframes brillo {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+/* El destello de un cambio que llegó por Realtime: un anillo del acento que se
+   apaga. Box-shadow y no borde, así no mueve nada de lugar. */
+@keyframes resaltar {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--acento) 0%, transparent); }
+  20% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--acento) 70%, transparent); }
+  100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--acento) 0%, transparent); }
 }
 
 @layer base {
+  /* En Tailwind 4 un `border` sin color es currentColor; los componentes de
+     shadcn cuentan con que sea el borde del tema. */
+  *, ::before, ::after {
+    border-color: var(--border);
+    outline-color: var(--ring);
+  }
+
   html {
     background-color: var(--fondo);
     color: var(--tinta);
     -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -151,6 +375,11 @@
     letter-spacing: 0.01em;
   }
 
+  ::selection {
+    background-color: var(--acento);
+    color: var(--sobre-acento);
+  }
+
   /* Que el notch y la barra de gestos no se coman nada. */
   .safe-arriba { padding-top: env(safe-area-inset-top, 0px); }
   .safe-abajo  { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -158,7 +387,13 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+    }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
     }
   }
 }
@@ -168,11 +403,58 @@
     background-color: var(--superficie);
     border: 1px solid var(--borde);
     border-radius: var(--radio);
+    box-shadow: var(--sombra-baja);
   }
 
-  /* El foco tiene que verse en los dos temas, sobre fondo claro. */
+  /* El foco tiene que verse en los seis, sobre fondo claro y oscuro. */
   .foco:focus-visible {
     outline: 2px solid var(--acento);
     outline-offset: 2px;
   }
+
+  /* Hundirse al tocar: en el celular no hay hover, y sin esto un tap no se siente. */
+  .tocable {
+    transition: transform var(--dur-rapida) var(--ease-salida);
+  }
+  .tocable:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  /* El brillo que cruza un esqueleto. Un degradado que se desplaza, solo
+     background-position, que el navegador anima sin repintar el layout. */
+  .brillo {
+    background-color: var(--acento-suave);
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--superficie-alta) 55%, transparent) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-brillo);
+  }
 }
+
+/* ---------------------------------------------------------------------------
+   El póster que viaja de la grilla a la ficha (y vuelve). Es un
+   `<ViewTransition share="morph">` de React: el navegador interpola tamaño y
+   posición, y el blur a mitad de camino esconde el estirado de la imagen.
+--------------------------------------------------------------------------- */
+::view-transition-group(.morph) {
+  animation-duration: var(--dur-lenta);
+  animation-timing-function: var(--ease-salida);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: por-el-aire;
+}
+@keyframes por-el-aire {
+  40% { filter: blur(2px); }
+}
+
+/* Los gráficos del resumen se revelan con un barrido desde la base de las
+   barras. Se anima el contenedor HTML y no los <g> del SVG: un transform
+   animado dentro del SVG de Recharts dejaba las barras sin repintar. */
+.grafico-crece-y { animation: revelar-y 650ms var(--ease-salida) both; }
+.grafico-crece-x { animation: revelar-x 650ms var(--ease-salida) both; }
+@keyframes revelar-y { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+@keyframes revelar-x { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }

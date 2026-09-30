@@ -1,6 +1,7 @@
 import { exigirPerfil } from '@/lib/sesion';
 import { FormularioAjustes } from './FormularioAjustes';
 import { BotonSalir } from './BotonSalir';
+import { SelectorModo } from './SelectorModo';
 
 export const metadata = { title: 'Ajustes — Nuestra libreta' };
 
@@ -15,6 +16,10 @@ export default async function Ajustes() {
       </header>
 
       <FormularioAjustes nombre={perfil.nombre} tema={perfil.tema} />
+
+      <div className="mt-4">
+        <SelectorModo />
+      </div>
 
       <section className="tarjeta mt-4 px-4 py-4">
         <h2 className="font-titulo text-2xl text-tinta">La otra persona</h2>

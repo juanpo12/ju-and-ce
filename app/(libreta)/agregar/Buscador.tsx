@@ -2,11 +2,16 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { urlPoster } from '@/lib/tmdb-url';
+import { AnimatePresence, motion } from 'motion/react';
+import { Check, Clock, Eye, LoaderCircle, Search } from 'lucide-react';
+import { Poster } from '@/components/Poster';
 import { Boton } from '@/components/Boton';
 import { Vacio } from '@/components/Vacio';
+import { Skeleton } from '@/components/ui/skeleton';
+import { DialogoAdaptable } from '@/components/DialogoAdaptable';
 import { accionAgregar } from '@/app/acciones';
+import { cn } from '@/lib/utils';
+import { hoyISO } from '@/lib/fechas';
 
 type Resultado = {
   tmdb_id: number;
@@ -63,88 +68,129 @@ export function Buscador() {
     return () => clearTimeout(t);
   }, [texto]);
 
+  const q = texto.trim();
+
   return (
     <div className="flex flex-col gap-4">
       <label className="relative block">
         <span className="sr-only">Buscar película</span>
+        <Search
+          aria-hidden
+          className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-tinta-suave"
+        />
         <input
           type="search"
           autoFocus
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Interestelar, Parásitos, El viaje de Chihiro…"
-          className="foco w-full rounded-tema border border-borde bg-superficie px-4 py-3 text-base text-tinta outline-none placeholder:text-tinta-suave/60"
+          className="foco w-full rounded-full border border-borde bg-superficie py-3.5 pl-12 pr-12 text-base text-tinta shadow-baja outline-none transition-colors placeholder:text-tinta-suave/70 focus:border-acento"
         />
         {buscando && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-tinta-suave">
-            buscando…
-          </span>
+          <LoaderCircle
+            aria-label="Buscando"
+            className="absolute right-4 top-1/2 size-5 -translate-y-1/2 animate-spin text-acento"
+          />
         )}
       </label>
 
       {error && (
-        <p role="alert" className="text-sm text-acento">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
 
+      {q.length < 2 && !resultados && (
+        <p className="px-1 text-sm text-tinta-suave">
+          Con dos letras alcanza. Los datos y el póster vienen de TMDB.
+        </p>
+      )}
+
+      {/* Mientras llega la primera tanda, el esqueleto con la forma de las filas. */}
+      {buscando && !resultados && <Esqueleto />}
+
       {resultados?.length === 0 && !buscando && (
         <Vacio
+          dibujo="lupa"
           titulo="No encontramos nada"
-          texto="Probá con el título original, o con menos palabras."
+          texto={`Nada para «${q}». Probá con el título original, o con menos palabras.`}
         />
       )}
 
       {resultados && resultados.length > 0 && (
-        <ul className="flex flex-col gap-2">
-          {resultados.map((p) => (
-            <li key={p.tmdb_id}>
-              <Fila resultado={p} onElegir={() => setElegida(p)} />
-            </li>
-          ))}
+        <ul
+          className="flex flex-col gap-2.5 transition-opacity"
+          style={{ opacity: buscando ? 0.6 : 1 }}
+          aria-busy={buscando}
+        >
+          <AnimatePresence initial={true} mode="popLayout">
+            {resultados.map((p, i) => (
+              <motion.li
+                key={p.tmdb_id}
+                layout="position"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                transition={{
+                  duration: 0.25,
+                  ease: [0.2, 0.8, 0.2, 1],
+                  delay: Math.min(i, 8) * 0.03,
+                }}
+              >
+                <Fila resultado={p} onElegir={() => setElegida(p)} />
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </ul>
       )}
 
-      {elegida && <Dialogo resultado={elegida} onCerrar={() => setElegida(null)} />}
+      <Dialogo resultado={elegida} onCerrar={() => setElegida(null)} />
     </div>
   );
 }
 
-function Fila({ resultado, onElegir }: { resultado: Resultado; onElegir: () => void }) {
-  const poster = urlPoster(resultado.poster_path, 'w185');
-
+function Esqueleto() {
   return (
-    <div className="tarjeta flex items-stretch gap-3 overflow-hidden">
-      <div className="w-16 shrink-0 bg-acento-suave">
-        {poster ? (
-          <Image
-            src={poster}
-            alt=""
-            width={92}
-            height={138}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="h-full min-h-24" />
-        )}
+    <ul className="flex flex-col gap-2.5" aria-hidden>
+      {Array.from({ length: 4 }, (_, i) => (
+        <li key={i} className="tarjeta flex items-center gap-3 overflow-hidden p-2">
+          <Skeleton className="aspect-[2/3] w-14 shrink-0 rounded-[calc(var(--radio)-4px)]" />
+          <div className="flex flex-1 flex-col gap-2">
+            <Skeleton className="h-4 w-3/5" />
+            <Skeleton className="h-3 w-2/5" />
+          </div>
+          <Skeleton className="mr-1 h-9 w-20 rounded-full" />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Fila({ resultado, onElegir }: { resultado: Resultado; onElegir: () => void }) {
+  const dentro = resultado.ya_en_biblioteca;
+  return (
+    <div className="tarjeta flex items-center gap-3 overflow-hidden p-2">
+      <div className="w-14 shrink-0 overflow-hidden rounded-[calc(var(--radio)-4px)]">
+        <Poster path={resultado.poster_path} titulo={resultado.titulo} tamano="chico" />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 py-2.5">
-        <p className="font-titulo text-lg leading-tight text-tinta">{resultado.titulo}</p>
-        <p className="text-xs text-tinta-suave">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="line-clamp-2 font-titulo text-xl leading-tight text-tinta">
+          {resultado.titulo}
+        </p>
+        <p className="truncate text-xs text-tinta-suave">
           {[resultado.anio, resultado.generos.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}
         </p>
       </div>
 
-      <div className="flex items-center pr-3">
-        {resultado.ya_en_biblioteca ? (
-          <span className="text-right text-xs leading-tight text-tinta-suave">
-            Ya está en
-            <br />
-            la biblioteca
+      <div className="flex shrink-0 items-center pr-1">
+        {dentro ? (
+          <span className="flex items-center gap-1 rounded-full bg-acento-suave px-2.5 py-1 text-xs font-medium text-tinta">
+            <Check className="size-3.5 text-acento" aria-hidden />
+            Ya está
           </span>
         ) : (
-          <Boton type="button" onClick={onElegir}>
+          <Boton type="button" onClick={onElegir} className="rounded-full px-4">
             Agregar
           </Boton>
         )}
@@ -153,19 +199,33 @@ function Fila({ resultado, onElegir }: { resultado: Resultado; onElegir: () => v
   );
 }
 
-function Dialogo({ resultado, onCerrar }: { resultado: Resultado; onCerrar: () => void }) {
+/**
+ * La elección clara entre «ya la vimos» y «queda pendiente»: dos opciones
+ * grandes, y los datos de la función aparecen solo si hacen falta.
+ */
+function Dialogo({ resultado, onCerrar }: { resultado: Resultado | null; onCerrar: () => void }) {
   const router = useRouter();
   const [guardando, empezar] = useTransition();
   const [error, setError] = useState('');
+  const [estado, setEstado] = useState<'vista' | 'pendiente'>('vista');
 
-  function agregar(estado: 'vista' | 'pendiente', fd?: FormData) {
+  // El último resultado elegido sigue dibujado mientras el cajón se cierra.
+  const [mostrado, setMostrado] = useState(resultado);
+  if (resultado && resultado !== mostrado) {
+    setMostrado(resultado);
+    setEstado('vista');
+    setError('');
+  }
+
+  function agregar(fd?: FormData) {
+    if (!mostrado) return;
     empezar(async () => {
       try {
         const id = await accionAgregar({
-          tmdbId: resultado.tmdb_id,
+          tmdbId: mostrado.tmdb_id,
           estado,
-          vistaEl: (fd?.get('vista_el') as string) || null,
-          lugar: (fd?.get('lugar') as string) || null,
+          vistaEl: estado === 'vista' ? (fd?.get('vista_el') as string) || null : null,
+          lugar: estado === 'vista' ? (fd?.get('lugar') as string) || null : null,
         });
         router.push(estado === 'vista' ? `/peli/${id}` : '/pendientes');
       } catch {
@@ -175,76 +235,127 @@ function Dialogo({ resultado, onCerrar }: { resultado: Resultado; onCerrar: () =
   }
 
   const input =
-    'foco rounded-tema border border-borde bg-fondo px-3 py-2 text-sm text-tinta outline-none';
+    'foco w-full rounded-tema border border-borde bg-fondo/60 px-3 py-2 text-base text-tinta outline-none transition-colors focus:border-acento';
 
   return (
-    // En mobile ocupa la pantalla; en desktop es un modal sobre la biblioteca.
-    <div
-      className="fixed inset-0 z-30 flex items-end justify-center bg-tinta/40 p-0 md:items-center md:p-6"
-      onClick={onCerrar}
+    <DialogoAdaptable
+      abierto={Boolean(resultado)}
+      onCambio={(a) => !a && onCerrar()}
+      titulo={mostrado?.titulo ?? ''}
+      descripcion={mostrado?.anio ? String(mostrado.anio) : undefined}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Agregar ${resultado.titulo}`}
-        onClick={(e) => e.stopPropagation()}
-        className="safe-abajo max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-tema border border-borde bg-superficie px-5 pb-6 pt-5 md:rounded-tema"
-      >
-        <h2 className="font-titulo text-3xl leading-tight text-tinta">{resultado.titulo}</h2>
-        {resultado.anio && <p className="text-sm text-tinta-suave">{resultado.anio}</p>}
+      <form action={agregar} className="flex flex-col gap-4">
+        <fieldset className="grid grid-cols-2 gap-2">
+          <legend className="sr-only">¿Ya la vieron?</legend>
+          <Opcion
+            elegida={estado === 'vista'}
+            onElegir={() => setEstado('vista')}
+            icono={<Eye className="size-5" />}
+            titulo="Ya la vimos"
+            texto="Va a la biblioteca"
+          />
+          <Opcion
+            elegida={estado === 'pendiente'}
+            onElegir={() => setEstado('pendiente')}
+            icono={<Clock className="size-5" />}
+            titulo="Queda pendiente"
+            texto="Para otro día"
+          />
+        </fieldset>
 
-        <form
-          action={(fd) => agregar('vista', fd)}
-          className="mt-5 flex flex-col gap-3 border-t border-borde pt-4"
-        >
-          <p className="text-sm font-semibold text-tinta">Ya la vimos</p>
-          <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-tinta-suave">Cuándo</span>
-              <input
-                type="date"
-                name="vista_el"
-                defaultValue={new Date().toISOString().slice(0, 10)}
-                className={input}
-              />
-            </label>
-            <label className="flex flex-1 flex-col gap-1">
-              <span className="text-xs font-semibold text-tinta-suave">Dónde</span>
-              <input
-                type="text"
-                name="lugar"
-                placeholder="el sillón, el cine…"
-                className={`${input} w-full`}
-              />
-            </label>
-          </div>
-          <Boton type="submit" disabled={guardando}>
-            {guardando ? 'Guardando…' : 'Agregar como vista'}
-          </Boton>
-        </form>
-
-        <div className="mt-4 flex flex-col gap-2 border-t border-borde pt-4">
-          <p className="text-sm font-semibold text-tinta">O todavía no</p>
-          <Boton
-            type="button"
-            variante="secundario"
-            disabled={guardando}
-            onClick={() => agregar('pendiente')}
-          >
-            Sumar a pendientes
-          </Boton>
-        </div>
+        <AnimatePresence initial={false}>
+          {estado === 'vista' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="flex flex-wrap gap-3 pb-1">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-tinta-suave">Cuándo</span>
+                  <input
+                    type="date"
+                    name="vista_el"
+                    defaultValue={hoyISO()}
+                    className={input}
+                  />
+                </label>
+                <label className="flex min-w-40 flex-1 flex-col gap-1">
+                  <span className="text-xs font-semibold text-tinta-suave">Dónde</span>
+                  <input
+                    type="text"
+                    name="lugar"
+                    placeholder="el sillón, el cine…"
+                    className={input}
+                  />
+                </label>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {error && (
-          <p role="alert" className="mt-3 text-sm text-acento">
+          <p role="alert" className="text-sm text-destructive">
             {error}
           </p>
         )}
 
-        <Boton type="button" variante="fantasma" className="mt-3 w-full" onClick={onCerrar}>
-          Cancelar
-        </Boton>
-      </div>
-    </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Boton type="button" variante="fantasma" onClick={onCerrar}>
+            Cancelar
+          </Boton>
+          <Boton type="submit" disabled={guardando} className="py-2.5">
+            {guardando
+              ? 'Guardando…'
+              : estado === 'vista'
+                ? 'Agregar a la biblioteca'
+                : 'Sumar a pendientes'}
+          </Boton>
+        </div>
+      </form>
+    </DialogoAdaptable>
+  );
+}
+
+function Opcion({
+  elegida,
+  onElegir,
+  icono,
+  titulo,
+  texto,
+}: {
+  elegida: boolean;
+  onElegir: () => void;
+  icono: React.ReactNode;
+  titulo: string;
+  texto: string;
+}) {
+  return (
+    <label
+      className={cn(
+        'tocable relative flex cursor-pointer flex-col gap-1.5 rounded-tema border-2 p-3 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-acento',
+        elegida
+          ? 'border-acento bg-acento-suave'
+          : 'border-borde bg-superficie hover:border-tinta-suave/40',
+      )}
+    >
+      <input type="radio" name="estado" checked={elegida} onChange={onElegir} className="sr-only" />
+      <span className={elegida ? 'text-acento' : 'text-tinta-suave'} aria-hidden>
+        {icono}
+      </span>
+      <span className="text-sm font-semibold text-tinta">{titulo}</span>
+      <span className="text-xs text-tinta-suave">{texto}</span>
+      {elegida && (
+        <motion.span
+          layoutId="opcion-elegida"
+          className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-full bg-acento text-sobre-acento"
+          transition={{ type: 'spring', bounce: 0.25, duration: 0.3 }}
+        >
+          <Check className="size-3.5" strokeWidth={3} />
+        </motion.span>
+      )}
+    </label>
   );
 }

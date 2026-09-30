@@ -2,7 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { Filtros } from '@/db/queries';
+import { cn } from '@/lib/utils';
 
 /**
  * Los filtros viven en la URL, no en estado de React: así se pueden compartir,
@@ -27,16 +29,15 @@ export function FiltrosBiblioteca({
     empezar(() => router.push(`/?${nuevos}`, { scroll: false }));
   }
 
-  const select =
-    'foco rounded-tema border border-borde bg-superficie px-2.5 py-1.5 text-sm text-tinta outline-none';
-
   return (
+    // En mobile, una sola fila que se desliza con el pulgar; en desktop entra toda.
     <div
-      className="flex flex-wrap items-center gap-2 transition-opacity"
+      className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 transition-opacity [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0"
       style={{ opacity: pendiente ? 0.55 : 1 }}
+      aria-busy={pendiente}
     >
-      <select
-        className={select}
+      <Chip
+        activo={false}
         value={actuales.orden ?? 'recientes'}
         onChange={(e) => cambiar('orden', e.target.value === 'recientes' ? '' : e.target.value)}
         aria-label="Ordenar por"
@@ -44,11 +45,11 @@ export function FiltrosBiblioteca({
         <option value="recientes">Más recientes</option>
         <option value="mejores">Mejor puntuadas</option>
         <option value="titulo">Por título</option>
-      </select>
+      </Chip>
 
       {opciones.generos.length > 0 && (
-        <select
-          className={select}
+        <Chip
+          activo={Boolean(actuales.genero)}
           value={actuales.genero ?? ''}
           onChange={(e) => cambiar('genero', e.target.value)}
           aria-label="Filtrar por género"
@@ -59,12 +60,12 @@ export function FiltrosBiblioteca({
               {g}
             </option>
           ))}
-        </select>
+        </Chip>
       )}
 
       {opciones.anios.length > 1 && (
-        <select
-          className={select}
+        <Chip
+          activo={Boolean(actuales.anio)}
           value={actuales.anio ?? ''}
           onChange={(e) => cambiar('anio', e.target.value)}
           aria-label="Filtrar por año"
@@ -75,11 +76,11 @@ export function FiltrosBiblioteca({
               {a}
             </option>
           ))}
-        </select>
+        </Chip>
       )}
 
-      <select
-        className={select}
+      <Chip
+        activo={Boolean(actuales.puntajeMinimo)}
         value={actuales.puntajeMinimo ?? ''}
         onChange={(e) => cambiar('min', e.target.value)}
         aria-label="Puntaje mínimo"
@@ -88,7 +89,37 @@ export function FiltrosBiblioteca({
         <option value="3">3 o más</option>
         <option value="4">4 o más</option>
         <option value="4.5">4,5 o más</option>
-      </select>
+      </Chip>
     </div>
+  );
+}
+
+/**
+ * Un <select> nativo con cara de chip. Nativo a propósito: en el celular abre la
+ * rueda del sistema, que es mejor que cualquier menú que dibujemos. Con un filtro
+ * puesto, se pinta con el acento para que se note qué está recortando la lista.
+ */
+function Chip({
+  activo,
+  className,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { activo: boolean }) {
+  return (
+    <span className="relative shrink-0">
+      <select
+        className={cn(
+          'foco tocable h-9 cursor-pointer appearance-none rounded-full border py-0 pl-3.5 pr-8 text-sm outline-none transition-colors',
+          activo
+            ? 'border-acento bg-acento-suave font-semibold text-tinta'
+            : 'border-borde bg-superficie text-tinta hover:border-tinta-suave/40',
+          className,
+        )}
+        {...props}
+      />
+      <ChevronDown
+        aria-hidden
+        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-tinta-suave"
+      />
+    </span>
   );
 }

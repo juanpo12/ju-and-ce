@@ -1,36 +1,48 @@
 import type { Metadata, Viewport } from 'next';
-import { Caveat, Lora, Quicksand } from 'next/font/google';
+import { Bebas_Neue, Caveat, Figtree, Lora } from 'next/font/google';
 import { perfilActual } from '@/lib/sesion';
+import { PALETAS, temaValido } from '@/lib/temas';
+import { Proveedores } from '@/components/Proveedores';
 import '@/styles/temas.css';
 
 // Self-hosted por next/font: no le pedimos nada a Google en runtime.
+// Caveat es la letra de la libreta, Bebas la de la marquesina del cine, Figtree
+// la que se lee. Lora queda solo para citar comentarios en el tema papel.
 const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat', display: 'swap' });
-const lora = Lora({ subsets: ['latin'], variable: '--font-lora', display: 'swap' });
-const quicksand = Quicksand({ subsets: ['latin'], variable: '--font-quicksand', display: 'swap' });
+const bebas = Bebas_Neue({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-bebas',
+  display: 'swap',
+});
+const figtree = Figtree({ subsets: ['latin'], variable: '--font-figtree', display: 'swap' });
+const lora = Lora({
+  subsets: ['latin'],
+  style: ['italic'],
+  variable: '--font-lora',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Nuestra libreta',
   description: 'Las películas que vimos juntos.',
   manifest: '/manifest.webmanifest',
+  icons: { icon: '/iconos/icono.svg', apple: '/iconos/icono-192.png' },
   appleWebApp: { capable: true, title: 'Libreta', statusBarStyle: 'default' },
-};
-
-/** El color del fondo de cada tema, para la barra del navegador. */
-const COLOR_DE_FONDO: Record<string, string> = {
-  papel: '#f5efe1',
-  bullet: '#fbfaf7',
-  menta: '#e4f2ea',
 };
 
 /**
  * Instalada en el inicio del celular, el sistema pinta la barra de estado con
- * este color. Si quedara fijo, el que eligió el tema menta vería una franja
- * beige arriba de su app verde.
+ * este color. Va uno por modo: mientras el modo sea «sistema», el navegador
+ * elige solo. Si alguien fuerza uno, `ColorDeBarra` lo corrige en el cliente.
  */
 export async function generateViewport(): Promise<Viewport> {
-  const perfil = await perfilActual();
+  const tema = temaValido((await perfilActual())?.tema);
   return {
-    themeColor: COLOR_DE_FONDO[perfil?.tema ?? 'papel'],
+    themeColor: [
+      { media: '(prefers-color-scheme: light)', color: PALETAS[tema].claro.fondo },
+      { media: '(prefers-color-scheme: dark)', color: PALETAS[tema].oscuro.fondo },
+    ],
     viewportFit: 'cover',
     width: 'device-width',
     initialScale: 1,
@@ -39,8 +51,10 @@ export async function generateViewport(): Promise<Viewport> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // El tema se lee en el servidor y se escribe en el primer render. Aplicarlo con
-  // JavaScript después de montar haría ver un flash del tema equivocado.
-  const perfil = await perfilActual();
+  // JavaScript después de montar haría ver un flash del tema equivocado. El modo
+  // (claro u oscuro) sí es del navegador: lo pone next-themes con un script que
+  // corre antes de pintar, y por eso el `suppressHydrationWarning`.
+  const tema = temaValido((await perfilActual())?.tema);
 
   return (
     // Las clases de next/font van en <html>, no en <body>: definen
@@ -49,10 +63,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // variables CSS heredan hacia abajo, nunca hacia arriba.
     <html
       lang="es-AR"
-      data-tema={perfil?.tema ?? 'papel'}
-      className={`${caveat.variable} ${lora.variable} ${quicksand.variable}`}
+      data-tema={tema}
+      suppressHydrationWarning
+      className={`${caveat.variable} ${bebas.variable} ${figtree.variable} ${lora.variable}`}
     >
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <Proveedores tema={tema}>{children}</Proveedores>
+      </body>
     </html>
   );
 }
