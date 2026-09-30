@@ -31,7 +31,7 @@ import {
  */
 
 /** Los mismos que acepta el check de `perfiles.tema` en la base. */
-const TEMAS = ['papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon'];
+const TEMAS = ['papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas'];
 
 function refrescar(...rutas: string[]) {
   for (const r of ['/', '/pendientes', '/resumen', ...rutas]) revalidatePath(r);

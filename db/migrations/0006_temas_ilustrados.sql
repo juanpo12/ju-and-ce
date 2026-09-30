@@ -1,0 +1,2 @@
+ALTER TABLE "perfiles" DROP CONSTRAINT "perfiles_tema_valido";--> statement-breakpoint
+ALTER TABLE "perfiles" ADD CONSTRAINT "perfiles_tema_valido" CHECK ("perfiles"."tema" in ('papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas'));

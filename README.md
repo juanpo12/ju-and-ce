@@ -129,7 +129,7 @@ una decisión nuestra, y hay mucho tutorial desactualizado dando vueltas.
 
 ### Los temas
 
-Siete, y no son modos oscuros: cada uno cambia fondo, tipografía, radios, acento,
+Diez, y no son modos oscuros: cada uno cambia fondo, tipografía, radios, acento,
 textura y hasta los colores con que se distingue a cada persona.
 
 | | Papel y washi | Bullet journal | Menta granizada |
@@ -147,6 +147,11 @@ Y cuatro de hadas, uno por cada imagen de inspiración de Ceci:
 | Acento | lavanda | rosa | verde salvia | orquídea |
 | Texto | Lora | Figtree | Lora | Lora |
 | Radio | 1,125 rem | 1,25 rem | 0,875 rem | 0,75 rem |
+
+Y tres ilustrados, con hadas, hongos y mariposas dibujados en SVG que enmarcan
+la pantalla desde las esquinas: **Hada del hongo** (lila), **Vuelo de mariposas**
+(celeste) y **Campanitas** (agua). Los dibujos salen de `scripts/arte-hadas.py`,
+que reescribe su sección de `styles/temas.css`: se retocan ahí, no en el CSS.
 
 Se guardan en `perfiles.tema`, no en el navegador, así cada uno tiene el suyo en
 cualquier dispositivo. El `data-tema` lo escribe el layout del servidor en el

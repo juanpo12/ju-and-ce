@@ -6,7 +6,7 @@
  * Tienen que coincidir con `styles/temas.css`, que es donde manda el tema.
  */
 
-export const TEMAS = ['papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon'] as const;
+export const TEMAS = ['papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas'] as const;
 export type Tema = (typeof TEMAS)[number];
 export type Modo = 'claro' | 'oscuro';
 
@@ -47,6 +47,21 @@ export const PALETAS: Record<Tema, { nombre: string; claro: Muestra; oscuro: Mue
     nombre: 'Guarida del dragón',
     claro: { fondo: '#f3e4cf', acento: '#b0406f', tinta: '#26211a' },
     oscuro: { fondo: '#1a1512', acento: '#f39ac0', tinta: '#f5ebdd' },
+  },
+  hongo: {
+    nombre: 'Hada del hongo',
+    claro: { fondo: '#f2ecf3', acento: '#7b4a8e', tinta: '#27212c' },
+    oscuro: { fondo: '#16121a', acento: '#cfa3e0', tinta: '#f2ecf5' },
+  },
+  mariposas: {
+    nombre: 'Vuelo de mariposas',
+    claro: { fondo: '#edf2f8', acento: '#4a5bb0', tinta: '#1f2533' },
+    oscuro: { fondo: '#11141c', acento: '#a3b1f2', tinta: '#edf1f8' },
+  },
+  campanitas: {
+    nombre: 'Campanitas',
+    claro: { fondo: '#e9f3f1', acento: '#23706b', tinta: '#1d2a28' },
+    oscuro: { fondo: '#0f1817', acento: '#7fd1c6', tinta: '#eaf5f3' },
   },
 };
 
