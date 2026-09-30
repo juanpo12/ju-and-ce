@@ -39,16 +39,22 @@ npm run alta -- --crear "Juan y Ceci"
 npm run dev
 ```
 
-Después cada uno entra una vez con su mail, copia el código que le muestra la
-pantalla, y vos los sumás:
+Tu cuenta la creás desde el panel de Supabase (Authentication → Users → Add
+user, con «Auto Confirm User») y la sumás a la libreta:
 
 ```bash
-npm run alta -- --sumar <código> --nombre Juan
-npm run alta -- --sumar <código> --nombre Ceci
+npm run alta -- --sumar <id-del-usuario> --nombre Juan
+npm run alta -- --clave vos@mail.com      # pone o cambia la contraseña
 ```
 
-El alta es un script y no una pantalla a propósito: `perfiles` no tiene política
-de insert, así que nadie puede sumarse solo a una libreta ajena.
+A la otra persona la invitás desde **Ajustes → Invitar a la otra persona**: es un
+link de un solo uso que vence en 7 días. Con él crea su cuenta (mail y
+contraseña) y queda adentro de la libreta. Después, cada uno entra siempre con
+mail y contraseña.
+
+En Supabase → Authentication → Sign In / Providers, **apagá «Allow new users to
+sign up»**. Así la única forma de tener cuenta es la invitación: con la URL de la
+app sola no se entra.
 
 ### Las variables
 
@@ -59,12 +65,7 @@ de insert, así que nadie puede sumarse solo a una libreta ajena.
 | `NEXT_PUBLIC_SUPABASE_URL` | Vercel + local | Pública, va al navegador |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + local | Pública por diseño: la RLS es lo que protege |
 | `TMDB_API_KEY` | Vercel + local | Solo servidor. Sin `NEXT_PUBLIC_`, **nunca** |
-
-La `service_role key` de Supabase no se usa en ninguna parte.
-
-En el panel de Supabase → Authentication → URL Configuration hay que agregar
-`https://<tu-dominio>/auth/callback` a las redirect URLs, o el magic link vuelve
-a ningún lado.
+| `SUPABASE_SECRET_KEY` | Vercel + local | Solo servidor. Crea la cuenta al canjear una invitación |
 
 ### Deploy
 
@@ -95,9 +96,9 @@ esquema.
 ```
 app/
   layout.tsx              fuentes, tema, el <html>
-  entrar/                 magic link
+  entrar/                 mail y contraseña
+  unirse/[token]/         el link de invitación: crea la cuenta
   sin-libreta/            tiene sesión pero nadie lo sumó todavía
-  auth/callback/          la vuelta del link
   acciones.ts             todas las mutaciones ('use server')
   api/peliculas/          TMDB: GET busca, POST importa la ficha
   (libreta)/

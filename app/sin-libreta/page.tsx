@@ -6,9 +6,9 @@ import { BotonSalir } from '@/app/(libreta)/ajustes/BotonSalir';
 export const metadata = { title: 'Todavía no — Nuestra libreta' };
 
 /**
- * Entraste bien, pero nadie te sumó a una libreta todavía. `perfiles` no tiene
- * política de insert a propósito: el alta la hace el servidor, con el script
- * `npm run alta`. Esta pantalla te da el id que ese script necesita.
+ * Entraste bien, pero no estás en ninguna libreta. Con el registro público
+ * apagado casi no pasa: las cuentas nacen de una invitación, que ya suma al
+ * espacio. Queda para una cuenta creada a mano desde el panel de Supabase.
  */
 export default async function SinLibreta() {
   const perfil = await perfilActual();
@@ -24,16 +24,8 @@ export default async function SinLibreta() {
         <h1 className="font-titulo text-3xl leading-tight text-tinta">Casi</h1>
         <p className="mt-2 text-sm leading-relaxed text-tinta-suave">
           Entraste como <strong className="text-tinta">{data.user.email}</strong>, pero todavía
-          no estás en ninguna libreta. Pasale este código a quien la creó:
-        </p>
-
-        <code className="mt-4 block overflow-x-auto rounded-tema border border-borde bg-fondo px-3 py-2.5 font-mono text-xs text-tinta">
-          {data.user.id}
-        </code>
-
-        <p className="mt-4 text-xs leading-relaxed text-tinta-suave">
-          Con eso corre <code className="text-tinta">npm run alta -- --sumar</code> y quedás
-          adentro. Después recargá esta página.
+          no estás en ninguna libreta. Pedile a quien la armó el link de invitación: se genera
+          desde Ajustes.
         </p>
 
         <div className="mt-5">

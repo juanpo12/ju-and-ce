@@ -5,12 +5,14 @@
  *   npm run alta -- --crear "Juan y Ceci"
  *   npm run alta -- --sumar <user-id> --nombre Juan --color durazno
  *   npm run alta -- --listar
+ *   npm run alta -- --clave vos@mail.com
  *
- * El user-id sale de la pantalla /sin-libreta, que es lo que ve alguien que
- * entró con el magic link pero todavía no está en ninguna libreta. O sea: cada
- * uno entra una vez, te pasa el código, y vos lo sumás.
+ * La otra persona no pasa por acá: se suma con el link de invitación que se
+ * genera desde Ajustes. `--sumar` queda para una cuenta creada a mano desde el
+ * panel de Supabase. `--clave` pone o cambia una contraseña sin saber la
+ * anterior.
  */
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { dbAdmin, espacios, perfiles } from './index';
 
 const args = process.argv.slice(2);
@@ -21,6 +23,44 @@ const opcion = (nombre: string) => {
 
 const aCrear = opcion('crear');
 const aSumar = opcion('sumar');
+
+const aClave = opcion('clave');
+
+if (aClave) {
+  // La contraseña se pide acá y no por argumento: así no queda en el historial
+  // de la terminal. Va por la API de admin porque el registro público está
+  // apagado y porque no hace falta saber la anterior.
+  const { createClient } = await import('@supabase/supabase-js');
+  const clave = process.env.SUPABASE_SECRET_KEY;
+  if (!clave) {
+    console.error('Falta SUPABASE_SECRET_KEY en .env (Supabase → Settings → API Keys).');
+    process.exit(1);
+  }
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, clave, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const [usuario] = (await dbAdmin.execute(
+    sql`select id from auth.users where lower(email) = lower(${aClave})`,
+  )) as unknown as { id: string }[];
+  if (!usuario) {
+    console.error(`No hay ninguna cuenta con ${aClave}.`);
+    process.exit(1);
+  }
+
+  const nueva = await preguntarOculto('Contraseña nueva (8+ caracteres): ');
+  if (nueva.length < 8) {
+    console.error('Tiene que tener al menos 8 caracteres.');
+    process.exit(1);
+  }
+  const { error } = await admin.auth.admin.updateUserById(usuario.id, { password: nueva });
+  if (error) {
+    console.error(`No se pudo: ${error.message}`);
+    process.exit(1);
+  }
+  console.log(`Listo: ${aClave} ya entra con esa contraseña.`);
+  process.exit(0);
+}
 
 if (args.includes('--listar')) {
   const filas = await dbAdmin
@@ -89,6 +129,36 @@ console.log(`Uso:
   npm run alta -- --crear "Juan y Ceci"
   npm run alta -- --sumar <user-id> --nombre Juan [--color durazno] [--espacio <id>]
   npm run alta -- --listar
+  npm run alta -- --clave <mail>
 
-El <user-id> lo muestra la pantalla /sin-libreta al que entró con el magic link.`);
+Para sumar a la otra persona no hace falta el script: el link de invitación se
+genera desde Ajustes.`);
 process.exit(0);
+
+/** Lee una línea de la terminal sin mostrar lo que se escribe. */
+function preguntarOculto(pregunta: string): Promise<string> {
+  return new Promise((resolver) => {
+    process.stdout.write(pregunta);
+    const entrada = process.stdin;
+    entrada.setRawMode?.(true);
+    entrada.resume();
+    entrada.setEncoding('utf8');
+    let texto = '';
+    const alTeclear = (tecla: string) => {
+      for (const c of tecla) {
+        if (c === '\r' || c === '\n') {
+          entrada.setRawMode?.(false);
+          entrada.pause();
+          entrada.off('data', alTeclear);
+          process.stdout.write('\n');
+          resolver(texto);
+          return;
+        }
+        if (c === '\u0003') process.exit(1); // ctrl+c
+        if (c === '\u007f') texto = texto.slice(0, -1); // borrar
+        else texto += c;
+      }
+    };
+    entrada.on('data', alTeclear);
+  });
+}

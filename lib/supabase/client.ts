@@ -3,7 +3,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 
 /**
- * Cliente del navegador. Solo para dos cosas: la sesion (magic link, logout) y
+ * Cliente del navegador. Solo para dos cosas: la sesion (entrar con contraseña, logout) y
  * el websocket de Realtime. Los datos los lee el servidor con Drizzle y los
  * escribe con server actions — asi el acceso a datos vive en un solo lugar.
  */

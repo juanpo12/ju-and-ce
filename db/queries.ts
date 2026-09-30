@@ -1,12 +1,13 @@
 import 'server-only';
 import { cache } from 'react';
-import { and, asc, desc, eq, getViewSelectedFields, gte, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, getViewSelectedFields, gt, gte, isNull, ne, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import {
   comoUsuario,
   dbAdmin,
   entradas,
   espacios,
+  invitaciones,
   peliculas,
   perfiles,
   puntajes,
@@ -15,6 +16,7 @@ import {
   type EntradaPuntuada,
   type Perfil,
 } from './index';
+import { createHash, randomBytes } from 'node:crypto';
 import { hoyISO, ZONA_LIBRETA } from '@/lib/fechas';
 
 /* ---------------------------------------------------------------------------
@@ -394,6 +396,97 @@ export async function guardarFicha(ficha: typeof peliculas.$inferInsert) {
 export async function fichaGuardada(tmdbId: number) {
   const [fila] = await dbAdmin.select().from(peliculas).where(eq(peliculas.tmdbId, tmdbId));
   return fila ?? null;
+}
+
+/* ------------------------------- invitaciones ----------------------------- */
+
+/** Una libreta es de a dos: el esquema aguanta más, las pantallas no. */
+const MAXIMO_POR_ESPACIO = 2;
+const DIAS_INVITACION = 7;
+
+const hashDe = (token: string) => createHash('sha256').update(token).digest('hex');
+
+/**
+ * Crea un link de un solo uso para sumarse al espacio y devuelve el token en
+ * claro, que es lo único que no queda guardado. Invalida los anteriores sin
+ * usar: vale solo el último que se mandó.
+ */
+export async function crearInvitacion(perfilId: string, espacioId: string) {
+  const token = randomBytes(24).toString('base64url');
+  await dbAdmin.transaction(async (tx) => {
+    await tx
+      .delete(invitaciones)
+      .where(and(eq(invitaciones.espacioId, espacioId), isNull(invitaciones.usadaEn)));
+    await tx.insert(invitaciones).values({
+      espacioId,
+      creadaPor: perfilId,
+      tokenHash: hashDe(token),
+      venceEn: new Date(Date.now() + DIAS_INVITACION * 86_400_000),
+    });
+  });
+  return token;
+}
+
+export type InvitacionValida = { id: string; espacioId: string; espacioNombre: string; invita: string };
+
+/** La invitación, si todavía sirve: sin usar, sin vencer y con lugar libre. */
+export async function invitacionValida(token: string): Promise<InvitacionValida | null> {
+  const [fila] = await dbAdmin
+    .select({
+      id: invitaciones.id,
+      espacioId: invitaciones.espacioId,
+      espacioNombre: espacios.nombre,
+      invita: perfiles.nombre,
+    })
+    .from(invitaciones)
+    .innerJoin(espacios, eq(espacios.id, invitaciones.espacioId))
+    .innerJoin(perfiles, eq(perfiles.id, invitaciones.creadaPor))
+    .where(
+      and(
+        eq(invitaciones.tokenHash, hashDe(token)),
+        isNull(invitaciones.usadaEn),
+        gt(invitaciones.venceEn, new Date()),
+      ),
+    );
+  if (!fila) return null;
+
+  const [lugar] = await dbAdmin
+    .select({ cuantos: count() })
+    .from(perfiles)
+    .where(eq(perfiles.espacioId, fila.espacioId));
+  return (lugar?.cuantos ?? 0) < MAXIMO_POR_ESPACIO ? fila : null;
+}
+
+/**
+ * Marca la invitación como usada, pero solo si nadie la usó antes: el `where`
+ * sobre `usada_en` hace que dos canjes simultáneos no pasen los dos.
+ */
+export async function reservarInvitacion(id: string) {
+  const filas = await dbAdmin
+    .update(invitaciones)
+    .set({ usadaEn: new Date() })
+    .where(and(eq(invitaciones.id, id), isNull(invitaciones.usadaEn)))
+    .returning({ id: invitaciones.id });
+  return filas.length === 1;
+}
+
+/** Si el alta falló después de reservarla, que el link vuelva a servir. */
+export async function liberarInvitacion(id: string) {
+  await dbAdmin.update(invitaciones).set({ usadaEn: null }).where(eq(invitaciones.id, id));
+}
+
+/** Suma a la persona invitada, con el color que no tiene la otra. */
+export async function sumarAlEspacio(userId: string, espacioId: string, nombre: string) {
+  const [otro] = await dbAdmin
+    .select({ color: perfiles.color })
+    .from(perfiles)
+    .where(eq(perfiles.espacioId, espacioId));
+  await dbAdmin.insert(perfiles).values({
+    id: userId,
+    espacioId,
+    nombre,
+    color: otro?.color === 'menta' ? 'durazno' : 'menta',
+  });
 }
 
 function hoy() {

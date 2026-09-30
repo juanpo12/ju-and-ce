@@ -187,6 +187,27 @@ export type Pelicula = typeof peliculas.$inferSelect;
 export type Entrada = typeof entradas.$inferSelect;
 export type Puntaje = typeof puntajes.$inferSelect;
 
+/**
+ * El link con el que la otra persona se suma a la libreta. Se guarda el hash del
+ * token, no el token: con la tabla sola no se puede armar un link que ande.
+ *
+ * RLS prendida y sin políticas: desde el navegador no se lee ni se escribe. La
+ * maneja solo el servidor, con la conexión privilegiada.
+ */
+export const invitaciones = pgTable('invitaciones', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  espacioId: uuid('espacio_id')
+    .notNull()
+    .references(() => espacios.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull().unique(),
+  creadaPor: uuid('creada_por')
+    .notNull()
+    .references(() => perfiles.id, { onDelete: 'cascade' }),
+  venceEn: timestamp('vence_en', { withTimezone: true }).notNull(),
+  usadaEn: timestamp('usada_en', { withTimezone: true }),
+  creadaEn: timestamp('creada_en', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
 /* ---------------------------------------------------------------------------
    Las vistas se crean en SQL (migracion 0001, porque drizzle-kit no genera
    vistas ni funciones), pero se declaran aca con `.existing()` para poder

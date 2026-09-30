@@ -29,6 +29,13 @@
       "when": 1790278338691,
       "tag": "0003_tema_menta",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790784799318,
+      "tag": "0004_invitaciones",
+      "breakpoints": true
     }
   ]
 }

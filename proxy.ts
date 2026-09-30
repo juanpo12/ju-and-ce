@@ -36,7 +36,8 @@ export async function proxy(request: NextRequest) {
   const logueado = Boolean(data?.claims.sub);
 
   const ruta = request.nextUrl.pathname;
-  const esPublica = ruta.startsWith('/entrar') || ruta.startsWith('/auth');
+  // /unirse es el link de invitación: lo abre alguien que todavía no tiene cuenta.
+  const esPublica = ruta.startsWith('/entrar') || ruta.startsWith('/unirse');
   // Tiene sesion pero todavia nadie lo sumo a una libreta: no puede entrar a la
   // app, y tampoco rebotarlo a /entrar — desde ahi volveria aca.
   const esAntesala = ruta.startsWith('/sin-libreta');

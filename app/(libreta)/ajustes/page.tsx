@@ -2,6 +2,8 @@ import { exigirPerfil } from '@/lib/sesion';
 import { FormularioAjustes } from './FormularioAjustes';
 import { BotonSalir } from './BotonSalir';
 import { SelectorModo } from './SelectorModo';
+import { Invitar } from './Invitar';
+import { CambiarClave } from './CambiarClave';
 
 export const metadata = { title: 'Ajustes — Nuestra libreta' };
 
@@ -29,10 +31,18 @@ export default async function Ajustes() {
             {perfil.companero.nombre} comparte esta libreta con vos.
           </p>
         ) : (
-          <p className="mt-1 text-sm text-tinta-suave">
-            Todavía sos la única persona en esta libreta.
-          </p>
+          <>
+            <p className="mt-1 text-sm text-tinta-suave">
+              Todavía sos la única persona en esta libreta.
+            </p>
+            <Invitar />
+          </>
         )}
+      </section>
+
+      <section className="tarjeta mt-4 px-4 py-4">
+        <h2 className="font-titulo text-2xl text-tinta">Contraseña</h2>
+        <CambiarClave />
       </section>
 
       <section className="tarjeta mt-4 px-4 py-4">
