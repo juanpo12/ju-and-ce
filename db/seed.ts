@@ -46,7 +46,7 @@ const fichas = process.env.TMDB_API_KEY
   ? await (async () => {
       const { traerFicha } = await import('../lib/tmdb');
       console.log('Trayendo las fichas de TMDB…');
-      return Promise.all(TRES.map(traerFicha));
+      return Promise.all(TRES.map((id) => traerFicha(id)));
     })()
   : (console.log('Sin TMDB_API_KEY: cargo lo que sabemos, sin póster ni sinopsis.'), SIN_TMDB);
 
@@ -55,7 +55,7 @@ for (const ficha of fichas) {
     .insert(peliculas)
     .values(ficha)
     .onConflictDoUpdate({
-      target: peliculas.tmdbId,
+      target: [peliculas.tmdbId, peliculas.tipo],
       set: { ...ficha, actualizadaEn: new Date() },
     });
   console.log(`  ${ficha.tmdbId}  ${ficha.titulo}`);

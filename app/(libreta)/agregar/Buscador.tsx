@@ -15,6 +15,7 @@ import { hoyISO } from '@/lib/fechas';
 
 type Resultado = {
   tmdb_id: number;
+  tipo: 'pelicula' | 'serie';
   titulo: string;
   anio: number | null;
   generos: string[];
@@ -73,7 +74,7 @@ export function Buscador() {
   return (
     <div className="flex flex-col gap-4">
       <label className="relative block">
-        <span className="sr-only">Buscar película</span>
+        <span className="sr-only">Buscar película o serie</span>
         <Search
           aria-hidden
           className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-tinta-suave"
@@ -83,7 +84,7 @@ export function Buscador() {
           autoFocus
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          placeholder="Interestelar, Parásitos, El viaje de Chihiro…"
+          placeholder="Interestelar, Parásitos, Severance…"
           className="foco w-full rounded-full border border-borde bg-superficie py-3.5 pl-12 pr-12 text-base text-tinta shadow-baja outline-none transition-colors placeholder:text-tinta-suave/70 focus:border-acento"
         />
         {buscando && (
@@ -126,7 +127,8 @@ export function Buscador() {
           <AnimatePresence initial={true} mode="popLayout">
             {resultados.map((p, i) => (
               <motion.li
-                key={p.tmdb_id}
+                // Una peli y una serie pueden tener el mismo id en TMDB.
+                key={`${p.tipo}-${p.tmdb_id}`}
                 layout="position"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -179,7 +181,13 @@ function Fila({ resultado, onElegir }: { resultado: Resultado; onElegir: () => v
           {resultado.titulo}
         </p>
         <p className="truncate text-xs text-tinta-suave">
-          {[resultado.anio, resultado.generos.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}
+          {[
+            resultado.tipo === 'serie' && 'Serie',
+            resultado.anio,
+            resultado.generos.slice(0, 2).join(', '),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       </div>
 
@@ -223,6 +231,7 @@ function Dialogo({ resultado, onCerrar }: { resultado: Resultado | null; onCerra
       try {
         const id = await accionAgregar({
           tmdbId: mostrado.tmdb_id,
+          tipo: mostrado.tipo,
           estado,
           vistaEl: estado === 'vista' ? (fd?.get('vista_el') as string) || null : null,
           lugar: estado === 'vista' ? (fd?.get('lugar') as string) || null : null,

@@ -101,7 +101,12 @@ export default async function Ficha({ params }: { params: Promise<{ id: string }
             )}
 
             <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-tinta-suave md:justify-start">
-              {[entrada.anio, entrada.director, entrada.duracionMin && `${entrada.duracionMin} min`]
+              {[
+                entrada.tipo === 'serie' && 'Serie',
+                entrada.anio,
+                entrada.director,
+                entrada.duracionMin && `${entrada.duracionMin} min`,
+              ]
                 .filter(Boolean)
                 .map((dato, i) => (
                   <span

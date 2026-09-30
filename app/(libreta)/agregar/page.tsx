@@ -8,7 +8,7 @@ export default function Agregar() {
       <header className="mb-5">
         <h1 className="font-titulo text-5xl leading-none text-tinta md:text-6xl">Agregar</h1>
         <p className="mt-1 text-sm text-tinta-suave">
-          Buscá la película y elegí si ya la vieron o queda pendiente.
+          Buscá la película o serie y elegí si ya la vieron o queda pendiente.
         </p>
       </header>
       <Buscador />

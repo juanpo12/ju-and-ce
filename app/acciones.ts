@@ -8,6 +8,7 @@ import { crearClienteServidor } from '@/lib/supabase/server';
 import { clienteAdmin } from '@/lib/supabase/admin';
 import { traerFicha } from '@/lib/tmdb';
 import { esDemo } from '@/lib/demo';
+import type { Tipo } from '@/db/schema';
 import {
   borrarEntrada,
   borrarPuntaje,
@@ -57,6 +58,7 @@ export async function accionBorrarPuntaje(entradaId: string) {
 
 export async function accionAgregar(datos: {
   tmdbId: number;
+  tipo: Tipo;
   estado: 'vista' | 'pendiente';
   vistaEl?: string | null;
   lugar?: string | null;
@@ -66,7 +68,7 @@ export async function accionAgregar(datos: {
   // La ficha tiene que existir antes que la entrada: `entradas.tmdb_id` la
   // referencia. Esto ya corre en el servidor, así que va derecho a TMDB — pasar
   // por /api/peliculas sería un request HTTP de la app a sí misma.
-  await guardarFicha(await traerFicha(datos.tmdbId));
+  await guardarFicha(await traerFicha(datos.tmdbId, datos.tipo));
 
   const id = await crearEntrada(perfil.id, perfil.espacioId, datos);
   refrescar();

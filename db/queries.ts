@@ -15,6 +15,7 @@ import {
   vPorGenero,
   type EntradaPuntuada,
   type Perfil,
+  type Tipo,
 } from './index';
 import { createHash, randomBytes } from 'node:crypto';
 import { hoyISO, ZONA_LIBRETA } from '@/lib/fechas';
@@ -189,7 +190,13 @@ export const buscarEntrada = cache(async (userId: string, entradaId: string) => 
           agregadaPorNombre: perfiles.nombre,
         })
         .from(vEntradasPuntuadas)
-        .leftJoin(peliculas, eq(peliculas.tmdbId, vEntradasPuntuadas.tmdbId))
+        .leftJoin(
+          peliculas,
+          and(
+            eq(peliculas.tmdbId, vEntradasPuntuadas.tmdbId),
+            eq(peliculas.tipo, vEntradasPuntuadas.tipo),
+          ),
+        )
         .leftJoin(perfiles, eq(perfiles.id, vEntradasPuntuadas.agregadaPor))
         .where(eq(vEntradasPuntuadas.id, entradaId)),
       tx.select().from(puntajes).where(eq(puntajes.entradaId, entradaId)),
@@ -262,22 +269,28 @@ export async function opcionesDeFiltro(userId: string) {
   });
 }
 
-/** Qué tmdb_id ya están en la libreta: enciende «Ya está en la biblioteca». */
-export async function tmdbIdsEnBiblioteca(userId: string): Promise<Set<number>> {
+/** El id de TMDB solo no alcanza: una peli y una serie pueden compartirlo. */
+export const claveFicha = (tmdbId: number, tipo: Tipo) => `${tipo}:${tmdbId}`;
+
+/** Qué fichas ya están en la libreta: enciende «Ya está en la biblioteca». */
+export async function fichasEnBiblioteca(userId: string): Promise<Set<string>> {
   return comoUsuario(userId, async (tx) => {
-    const filas = await tx.select({ tmdbId: entradas.tmdbId }).from(entradas);
-    return new Set(filas.map((f) => f.tmdbId));
+    const filas = await tx
+      .select({ tmdbId: entradas.tmdbId, tipo: entradas.tipo })
+      .from(entradas);
+    return new Set(filas.map((f) => claveFicha(f.tmdbId, f.tipo)));
   });
 }
 
 /* -------------------------------- escrituras ----------------------------- */
 
-/** Da de alta una película en la libreta, como vista o como pendiente. */
+/** Da de alta una película o serie en la libreta, como vista o como pendiente. */
 export async function crearEntrada(
   userId: string,
   espacioId: string,
   datos: {
     tmdbId: number;
+    tipo: Tipo;
     estado: 'vista' | 'pendiente';
     vistaEl?: string | null;
     lugar?: string | null;
@@ -289,13 +302,14 @@ export async function crearEntrada(
       .values({
         espacioId,
         tmdbId: datos.tmdbId,
+        tipo: datos.tipo,
         estado: datos.estado,
         vistaEl: datos.estado === 'vista' ? (datos.vistaEl ?? hoy()) : null,
         lugar: datos.lugar || null,
         agregadaPor: userId,
       })
       // Si ya estaba, no explota: devolvemos la que había.
-      .onConflictDoNothing({ target: [entradas.espacioId, entradas.tmdbId] })
+      .onConflictDoNothing({ target: [entradas.espacioId, entradas.tmdbId, entradas.tipo] })
       .returning({ id: entradas.id });
 
     if (fila) return fila.id;
@@ -303,7 +317,7 @@ export async function crearEntrada(
     const [existente] = await tx
       .select({ id: entradas.id })
       .from(entradas)
-      .where(eq(entradas.tmdbId, datos.tmdbId));
+      .where(and(eq(entradas.tmdbId, datos.tmdbId), eq(entradas.tipo, datos.tipo)));
     return existente!.id;
   });
 }
@@ -388,13 +402,16 @@ export async function guardarFicha(ficha: typeof peliculas.$inferInsert) {
     .insert(peliculas)
     .values(ficha)
     .onConflictDoUpdate({
-      target: peliculas.tmdbId,
+      target: [peliculas.tmdbId, peliculas.tipo],
       set: { ...ficha, actualizadaEn: new Date() },
     });
 }
 
-export async function fichaGuardada(tmdbId: number) {
-  const [fila] = await dbAdmin.select().from(peliculas).where(eq(peliculas.tmdbId, tmdbId));
+export async function fichaGuardada(tmdbId: number, tipo: Tipo = 'pelicula') {
+  const [fila] = await dbAdmin
+    .select()
+    .from(peliculas)
+    .where(and(eq(peliculas.tmdbId, tmdbId), eq(peliculas.tipo, tipo)));
   return fila ?? null;
 }
 

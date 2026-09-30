@@ -2,6 +2,7 @@ import {
   bigint,
   check,
   date,
+  foreignKey,
   index,
   integer,
   numeric,
@@ -73,13 +74,19 @@ export const perfiles = pgTable('perfiles', {
   }),
 ]);
 
+/** TMDB numera peliculas y series por separado: el 1399 es una cosa en cada lado. */
+export const TIPOS = ['pelicula', 'serie'] as const;
+export type Tipo = (typeof TIPOS)[number];
+
 /**
- * Ficha de TMDB, global: una fila por pelicula, no por pareja ni por usuario.
- * poster_path guarda el fragmento que devuelve TMDB ('/abc123.jpg'), no la URL
+ * Ficha de TMDB, global: una fila por pelicula o serie, no por pareja ni por
+ * usuario. La clave es (tmdb_id, tipo) porque los ids de TMDB se repiten entre
+ * peliculas y series. poster_path guarda el fragmento que devuelve TMDB ('/abc123.jpg'), no la URL
  * entera: la base de la URL cambia cada tanto y no queremos migrar filas.
  */
 export const peliculas = pgTable('peliculas', {
-  tmdbId: integer('tmdb_id').primaryKey(),
+  tmdbId: integer('tmdb_id').notNull(),
+  tipo: text('tipo', { enum: TIPOS }).notNull().default('pelicula'),
   titulo: text('titulo').notNull(),
   tituloOriginal: text('titulo_original'),
   anio: smallint('anio'),
@@ -91,7 +98,9 @@ export const peliculas = pgTable('peliculas', {
   actualizadaEn: timestamp('actualizada_en', { withTimezone: true })
     .notNull()
     .defaultNow(),
-}, () => [
+}, (t) => [
+  primaryKey({ columns: [t.tmdbId, t.tipo] }),
+  check('peliculas_tipo_valido', sql`${t.tipo} in ('pelicula', 'serie')`),
   // Las fichas de TMDB las lee cualquiera autenticado. Escribe solo el servidor,
   // desde el route handler, con la conexion privilegiada (`dbAdmin`): por eso no
   // hay politica de insert ni de update.
@@ -111,9 +120,8 @@ export const entradas = pgTable('entradas', {
   espacioId: uuid('espacio_id')
     .notNull()
     .references(() => espacios.id, { onDelete: 'cascade' }),
-  tmdbId: integer('tmdb_id')
-    .notNull()
-    .references(() => peliculas.tmdbId),
+  tmdbId: integer('tmdb_id').notNull(),
+  tipo: text('tipo', { enum: TIPOS }).notNull().default('pelicula'),
   estado: text('estado', { enum: ['vista', 'pendiente'] }).notNull(),
   vistaEl: date('vista_el'),
   lugar: text('lugar'),
@@ -123,9 +131,14 @@ export const entradas = pgTable('entradas', {
   creadaEn: timestamp('creada_en', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   check('entradas_estado_valido', sql`${t.estado} in ('vista', 'pendiente')`),
+  foreignKey({
+    name: 'entradas_ficha_fk',
+    columns: [t.tmdbId, t.tipo],
+    foreignColumns: [peliculas.tmdbId, peliculas.tipo],
+  }),
   // Evita que la misma peli entre dos veces. Es lo que enciende el cartel
   // «Ya esta en la biblioteca» en la pantalla de busqueda.
-  unique('entradas_espacio_tmdb_uq').on(t.espacioId, t.tmdbId),
+  unique('entradas_espacio_tmdb_uq').on(t.espacioId, t.tmdbId, t.tipo),
   index('entradas_espacio_estado_idx').on(t.espacioId, t.estado, t.creadaEn.desc()),
   // La libreta: se lee y se escribe solo dentro del propio espacio.
   pgPolicy('entradas_rw', {
@@ -218,6 +231,7 @@ export const vEntradasPuntuadas = pgView('v_entradas_puntuadas', {
   id: uuid('id').notNull(),
   espacioId: uuid('espacio_id').notNull(),
   tmdbId: integer('tmdb_id').notNull(),
+  tipo: text('tipo', { enum: TIPOS }).notNull(),
   estado: text('estado', { enum: ['vista', 'pendiente'] }).notNull(),
   vistaEl: date('vista_el'),
   lugar: text('lugar'),
