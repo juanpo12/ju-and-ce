@@ -19,6 +19,16 @@ import { TicTacToe } from './games/TicTacToe';
 import { Dice } from './games/Dice';
 import { Trivia } from './games/Trivia';
 import { HigherLower } from './games/HigherLower';
+import { ConnectFour } from './games/ConnectFour';
+import { Nim } from './games/Nim';
+import { Boxes } from './games/Boxes';
+import { CursedCard } from './games/CursedCard';
+import { TapRace } from './games/TapRace';
+import { SecretNumber } from './games/SecretNumber';
+import { Simon } from './games/Simon';
+import { Battleship } from './games/Battleship';
+import { PosterGuess } from './games/PosterGuess';
+import { Timeline } from './games/Timeline';
 
 /**
  * The duo session, live. The `noches` row lives here in state: every action
@@ -154,6 +164,26 @@ export function NightSession({
           return <Trivia table={table} match={match} pending={pending} />;
         case 'mayormenor':
           return <HigherLower table={table} match={match} pending={pending} />;
+        case 'cuatro':
+          return <ConnectFour table={table} match={match} pending={pending} />;
+        case 'nim':
+          return <Nim table={table} match={match} pending={pending} />;
+        case 'cajas':
+          return <Boxes table={table} match={match} pending={pending} />;
+        case 'carta':
+          return <CursedCard table={table} match={match} pending={pending} />;
+        case 'taps':
+          return <TapRace table={table} match={match} pending={pending} />;
+        case 'numero':
+          return <SecretNumber table={table} match={match} pending={pending} />;
+        case 'simon':
+          return <Simon table={table} match={match} pending={pending} />;
+        case 'naval':
+          return <Battleship table={table} match={match} pending={pending} />;
+        case 'poster':
+          return <PosterGuess table={table} match={match} pending={pending} />;
+        case 'linea':
+          return <Timeline table={table} match={match} pending={pending} />;
         default:
           return null;
       }

@@ -73,7 +73,7 @@ export const perfiles = pgTable('perfiles', {
   color: text('color').notNull().default('terracota'),
   tema: text('tema').notNull().default('papel'),
 }, (t) => [
-  check('perfiles_tema_valido', sql`${t.tema} in ('papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas')`),
+  check('perfiles_tema_valido', sql`${t.tema} in ('papel', 'bullet', 'menta', 'tinta', 'pizarra', 'mostaza', 'cacao', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas', 'cine', 'videoclub', 'marea', 'atardecer', 'frutilla', 'galaxia')`),
   index('perfiles_espacio_idx').on(t.espacioId),
   // Los dos se ven entre si: la biblioteca necesita el nombre y el color del otro.
   pgPolicy('perfiles_lectura', {
@@ -267,7 +267,7 @@ export const nights = pgTable('noches', {
   ),
   check(
     'noches_juego_valido',
-    sql`${t.game} is null or ${t.game} in ('ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor', 'moneda')`,
+    sql`${t.game} is null or ${t.game} in ('ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor', 'cuatro', 'nim', 'cajas', 'carta', 'taps', 'numero', 'simon', 'naval', 'poster', 'linea', 'moneda')`,
   ),
   // One live session per space. This is what makes it safe for both to tap
   // "De a dos" at the same time: the second insert collides and keeps the first.

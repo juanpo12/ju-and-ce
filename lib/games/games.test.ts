@@ -241,9 +241,10 @@ test('index: start, play, coin and move validation', () => {
   assert.throws(() => startMatch('memoria', nothingWatched, rng), /pelis vistas/);
   assert.throws(() => startMatch('ahorcado', nothingWatched, rng), /peli vista/);
   assert.throws(() => startMatch('trivia', nothingWatched, rng), /preguntas/);
-  for (const game of ['tateti', 'dados', 'trivia', 'mayormenor'] as const) {
+  for (const game of ['tateti', 'dados', 'trivia', 'mayormenor', 'cuatro', 'nim', 'cajas', 'carta', 'taps', 'numero', 'simon', 'naval', 'linea'] as const) {
     assert.equal(startMatch(game, ctx, rng).match.game, game);
   }
+  assert.throws(() => startMatch('poster', ctx, rng), /póster/, 'the fixture library has no posters');
 
   assert.equal(isValidMove({ game: 'ppt', throw: 'paper' }), true);
   assert.equal(isValidMove({ game: 'ppt', throw: 'lizard' }), false);
@@ -257,6 +258,18 @@ test('index: start, play, coin and move validation', () => {
   assert.equal(isValidMove({ game: 'trivia', answer: 1 }), true);
   assert.equal(isValidMove({ game: 'mayormenor', guess: 'higher' }), true);
   assert.equal(isValidMove({ game: 'mayormenor', guess: 'same' }), false);
+  assert.equal(isValidMove({ game: 'cuatro', col: 3 }), true);
+  assert.equal(isValidMove({ game: 'nim', row: 1, count: 2 }), true);
+  assert.equal(isValidMove({ game: 'cajas', edge: 'h', index: 0 }), true);
+  assert.equal(isValidMove({ game: 'cajas', edge: 'x', index: 0 }), false);
+  assert.equal(isValidMove({ game: 'carta', card: 5 }), true);
+  assert.equal(isValidMove({ game: 'taps', count: 120 }), true);
+  assert.equal(isValidMove({ game: 'taps', count: 99999 }), false);
+  assert.equal(isValidMove({ game: 'numero', pick: 42 }), true);
+  assert.equal(isValidMove({ game: 'simon', input: [0, 1, 2] }), true);
+  assert.equal(isValidMove({ game: 'naval', cell: 7 }), true);
+  assert.equal(isValidMove({ game: 'poster', guess: 'Elvis' }), true);
+  assert.equal(isValidMove({ game: 'linea', order: [0, 1, 2, 3, 4] }), true);
   assert.equal(isValidMove(null), false);
 });
 

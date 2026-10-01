@@ -250,8 +250,15 @@ Desde Pendientes, «Noche de peli» elige qué ver. Dos modos:
   cinco letras para los dos, menos intentos gana), tateti, dados (al mejor de
   3), la trivia de la libreta (cinco preguntas sobre lo que ya vieron: años,
   directores, duración, quién puso más estrellas), mayor o menor (las mismas
-  cartas para los dos, la racha más larga gana) o la moneda. Los empates los
-  define la moneda, y en cualquier juego se puede rendir: gana el otro.
+  cartas para los dos, la racha más larga gana), cuatro en línea, nim (el que
+  saca el último fósforo pierde), puntos y cajas, la carta maldita (doce boca
+  abajo, el que da vuelta la maldita pierde), carrera de taps (diez segundos),
+  el número secreto (el más cercano al que sale), simón dice, batalla naval
+  (6×6, barcos puestos al azar), adiviná el póster (uno de la biblioteca que se
+  va aclarando) y línea de tiempo (ordenar cinco vistas por año), o la moneda.
+  Los empates los define la moneda, y en cualquier juego se puede rendir: gana
+  el otro. Solo la memoria, el ahorcado, la trivia, el póster y la línea de
+  tiempo necesitan pelis vistas; el resto no depende de la libreta.
 
 La sesión es una fila de `noches` con el estado como `jsonb`. Toda transición
 pasa por `transitionNight()` en `db/queries.ts`, que lee la fila con

@@ -106,7 +106,7 @@ export function PanelPuntaje({
                   Guardar comentario
                 </Boton>
               )}
-              <Boton type="button" variante="fantasma" onClick={borrar} disabled={guardando}>
+              <Boton type="button" variante="peligro" onClick={borrar} disabled={guardando}>
                 Borrar mi puntaje
               </Boton>
             </div>

@@ -36,7 +36,7 @@ export default async function Biblioteca({
 
   return (
     <>
-      <header className="mb-4 flex items-end justify-between gap-4">
+      <header className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div>
           <h1 className="font-titulo text-5xl leading-none text-tinta md:text-6xl">Biblioteca</h1>
           <p className="mt-1 text-sm text-tinta-suave">

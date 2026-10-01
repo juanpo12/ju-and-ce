@@ -22,6 +22,16 @@ const DESCRIPTION: Record<Game, string> = {
   dados: 'Cada uno tira dos dados. El número más alto se lleva la ronda, al mejor de 3.',
   trivia: 'Cinco preguntas sobre lo que ya vieron: años, directores, quién puso más estrellas.',
   mayormenor: 'Las mismas cartas para los dos: ¿la próxima es más alta o más baja? La racha más larga gana.',
+  cuatro: 'Fichas que caen por columna. Cuatro seguidas, en cualquier dirección, ganan.',
+  nim: 'Tres filas de fósforos. Sacás los que quieras de una fila; el que saca el último pierde.',
+  cajas: 'Unir puntos para cerrar cuadrados. Cerrás uno, seguís. Más cuadrados gana.',
+  carta: 'Doce cartas boca abajo, una está maldita. Por turnos: el que la da vuelta pierde.',
+  taps: 'Diez segundos tocando la pantalla lo más rápido que puedas. Más toques gana.',
+  numero: 'Cada uno elige un número del 1 al 100 a escondidas. Gana el más cercano al que sale.',
+  simon: 'Una secuencia de colores que crece. El que la repite más larga gana.',
+  naval: 'Tres barcos cada uno en una grilla de 6×6, puestos al azar. El primero que hunde todos gana.',
+  poster: 'Un póster de la biblioteca que se va aclarando. El primero que adivina el título gana.',
+  linea: 'Cinco pelis de la biblioteca: ordenalas por año. Más posiciones acertadas gana.',
   moneda: 'Sin jugar: cara o cruz.',
 };
 
@@ -280,6 +290,91 @@ function GameIcon({ game }: { game: Game }) {
             <rect x="4" y="5" width="9" height="13" rx="1.8" />
             <path d="M13 7.5l4.5-1.2a1.5 1.5 0 0 1 1.8 1.1l2.2 8.6a1.5 1.5 0 0 1-1.1 1.8L17 19" />
             <path d="M8.5 9.5v4M6.5 11.5h4" />
+          </>
+        )}
+        {game === 'cuatro' && (
+          <>
+            <rect x="3" y="5" width="18" height="15" rx="2" />
+            <circle cx="7.5" cy="16" r="1.4" fill="currentColor" />
+            <circle cx="12" cy="16" r="1.4" fill="currentColor" />
+            <circle cx="16.5" cy="16" r="1.4" fill="currentColor" />
+            <circle cx="7.5" cy="11" r="1.4" />
+            <circle cx="12" cy="11" r="1.4" />
+          </>
+        )}
+        {game === 'nim' && (
+          <>
+            <path d="M6 20V8M10 20V8M14 20V8M18 20V8" />
+            <circle cx="6" cy="6" r="1.4" fill="currentColor" />
+            <circle cx="10" cy="6" r="1.4" fill="currentColor" />
+            <circle cx="14" cy="6" r="1.4" fill="currentColor" />
+            <circle cx="18" cy="6" r="1.4" fill="currentColor" />
+          </>
+        )}
+        {game === 'cajas' && (
+          <>
+            <circle cx="5" cy="5" r="1.2" fill="currentColor" />
+            <circle cx="12" cy="5" r="1.2" fill="currentColor" />
+            <circle cx="19" cy="5" r="1.2" fill="currentColor" />
+            <circle cx="5" cy="12" r="1.2" fill="currentColor" />
+            <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+            <circle cx="19" cy="12" r="1.2" fill="currentColor" />
+            <circle cx="5" cy="19" r="1.2" fill="currentColor" />
+            <circle cx="12" cy="19" r="1.2" fill="currentColor" />
+            <circle cx="19" cy="19" r="1.2" fill="currentColor" />
+            <path d="M5 5h7v7H5zM12 12h7" />
+          </>
+        )}
+        {game === 'carta' && (
+          <>
+            <rect x="7" y="3" width="10" height="15" rx="1.8" />
+            <path d="M4 7v12.5a1.5 1.5 0 0 0 1.5 1.5H16" />
+            <path d="M12 7.5c-1.5-1.8-4 0-2.2 2.2L12 12l2.2-2.3c1.8-2.2-.7-4-2.2-2.2z" fill="currentColor" stroke="none" />
+          </>
+        )}
+        {game === 'taps' && (
+          <>
+            <path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11M12 10V9a1.5 1.5 0 0 1 3 0v3M15 11.5a1.5 1.5 0 0 1 3 0V15a5 5 0 0 1-5 5h-1a5 5 0 0 1-4.3-2.4L5.5 14a1.4 1.4 0 0 1 2.3-1.6L9 14" />
+            <path d="M6.5 5.5l-2-2M16.5 4.5l1.5-2M11 3V1" />
+          </>
+        )}
+        {game === 'numero' && (
+          <>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M9 15V9l-1.5 1.2M13.5 9h3l-2.2 2.6a1.7 1.7 0 1 1-1.3 3" />
+          </>
+        )}
+        {game === 'simon' && (
+          <>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M12 3.5v17M3.5 12h17" />
+            <path d="M12 12L6 6a8.5 8.5 0 0 1 6-2.5z" fill="currentColor" stroke="none" />
+          </>
+        )}
+        {game === 'naval' && (
+          <>
+            <path d="M3 15h18l-2.5 4H5.5z" />
+            <path d="M7 15v-4h7l3 4M10 11V7h3v4" />
+            <path d="M3 20c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" />
+          </>
+        )}
+        {game === 'poster' && (
+          <>
+            <rect x="5" y="3" width="14" height="18" rx="1.5" />
+            <rect x="8" y="6" width="3" height="3" fill="currentColor" stroke="none" opacity="0.4" />
+            <rect x="13" y="6" width="3" height="3" fill="currentColor" stroke="none" opacity="0.7" />
+            <rect x="8" y="11" width="3" height="3" fill="currentColor" stroke="none" opacity="0.9" />
+            <rect x="13" y="11" width="3" height="3" fill="currentColor" stroke="none" opacity="0.3" />
+            <path d="M8 17.5h8" />
+          </>
+        )}
+        {game === 'linea' && (
+          <>
+            <path d="M3 12h18" />
+            <circle cx="6" cy="12" r="1.8" fill="currentColor" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="18" cy="12" r="1.8" fill="currentColor" />
+            <path d="M6 7v3M12 14v3M18 7v3" />
           </>
         )}
         {game === 'moneda' && (

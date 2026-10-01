@@ -65,7 +65,7 @@ export function DatosDeLaFuncion({
           {agregadaPor && <p className="text-xs text-tinta-suave">La sumó {agregadaPor}</p>}
         </div>
         {!editando && (
-          <Boton type="button" variante="fantasma" onClick={() => setEditando(true)}>
+          <Boton type="button" variante="suave" onClick={() => setEditando(true)}>
             Editar
           </Boton>
         )}
@@ -86,7 +86,7 @@ export function DatosDeLaFuncion({
             <Boton type="submit" disabled={pendiente}>
               Guardar
             </Boton>
-            <Boton type="button" variante="fantasma" onClick={() => setEditando(false)}>
+            <Boton type="button" variante="suave" onClick={() => setEditando(false)}>
               Cancelar
             </Boton>
           </div>
@@ -94,7 +94,7 @@ export function DatosDeLaFuncion({
       )}
 
       <div className="mt-1 border-t border-borde pt-3">
-        <Boton type="button" variante="fantasma" onClick={() => setConfirmando(true)}>
+        <Boton type="button" variante="peligro" onClick={() => setConfirmando(true)}>
           Sacar de la libreta
         </Boton>
       </div>

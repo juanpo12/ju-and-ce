@@ -91,7 +91,7 @@ export function TonightsPick({
             variante="fantasma"
             onClick={clear}
             disabled={clearing}
-            className="h-10 px-3 text-current opacity-80 hover:text-current hover:opacity-100"
+            className="text-current hover:text-current"
           >
             Soltar
           </Boton>

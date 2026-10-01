@@ -8,6 +8,7 @@ import { crearClienteServidor } from '@/lib/supabase/server';
 import { clienteAdmin } from '@/lib/supabase/admin';
 import { traerFicha } from '@/lib/tmdb';
 import { esDemo } from '@/lib/demo';
+import { TEMAS, type Tema } from '@/lib/temas';
 import type { Tipo } from '@/db/schema';
 import {
   borrarEntrada,
@@ -53,8 +54,6 @@ import { applyMove, GameError, isValidMove, startMatch, tiebreak } from '@/lib/g
  * usuario sale de la sesión, nunca del formulario.
  */
 
-/** Los mismos que acepta el check de `perfiles.tema` en la base. */
-const TEMAS = ['papel', 'bullet', 'menta', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas'];
 
 function refrescar(...rutas: string[]) {
   for (const r of ['/', '/pendientes', '/resumen', ...rutas]) revalidatePath(r);
@@ -129,7 +128,8 @@ export async function accionGuardarAjustes(formData: FormData) {
 
   await guardarAjustes(perfil.id, {
     ...(nombre ? { nombre } : {}),
-    ...(TEMAS.includes(tema) ? { tema } : {}),
+    // Los mismos que acepta el check de `perfiles.tema` en la base.
+    ...(TEMAS.includes(tema as Tema) ? { tema } : {}),
   });
   // El tema vive en el <html> del layout raíz, así que hay que revalidar todo.
   revalidatePath('/', 'layout');

@@ -12,7 +12,11 @@ import type { Night, Tipo } from '@/db/schema';
 /** The same values as the checks on `noches` in the database. */
 export const NIGHT_MODES = ['individual', 'duo'] as const;
 export const NIGHT_PHASES = ['esperando', 'candidatas', 'juego', 'jugando', 'terminada', 'cancelada'] as const;
-export const GAMES = ['ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor', 'moneda'] as const;
+export const GAMES = [
+  'ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor',
+  'cuatro', 'nim', 'cajas', 'carta', 'taps', 'numero', 'simon', 'naval', 'poster', 'linea',
+  'moneda',
+] as const;
 
 export type Mode = (typeof NIGHT_MODES)[number];
 
@@ -37,6 +41,16 @@ export const GAME_NAME: Record<Game, string> = {
   dados: 'Dados',
   trivia: 'Trivia de la libreta',
   mayormenor: 'Mayor o menor',
+  cuatro: 'Cuatro en línea',
+  nim: 'Nim',
+  cajas: 'Puntos y cajas',
+  carta: 'La carta maldita',
+  taps: 'Carrera de taps',
+  numero: 'El número secreto',
+  simon: 'Simón dice',
+  naval: 'Batalla naval',
+  poster: 'Adiviná el póster',
+  linea: 'Línea de tiempo',
   moneda: 'Moneda',
 };
 
@@ -50,6 +64,16 @@ export const AT_GAME: Record<Game, string> = {
   dados: 'a los dados',
   trivia: 'a la trivia',
   mayormenor: 'a mayor o menor',
+  cuatro: 'al cuatro en línea',
+  nim: 'al nim',
+  cajas: 'a puntos y cajas',
+  carta: 'a la carta maldita',
+  taps: 'a la carrera de taps',
+  numero: 'al número secreto',
+  simon: 'a simón dice',
+  naval: 'a la batalla naval',
+  poster: 'a adivinar el póster',
+  linea: 'a la línea de tiempo',
   moneda: 'a la moneda',
 };
 
@@ -217,6 +241,116 @@ export type HigherLowerMatch = {
   runs: Record<string, { seen: number[]; streak: number; done: boolean }>;
 };
 
+/* ---- the ten that came later. None of the first seven needs the library. ---- */
+
+export type ConnectFourMatch = {
+  game: 'cuatro';
+  cols: number;
+  rows: number;
+  /** `rows * cols` cells, row 0 at the top, index = row * cols + col. */
+  cells: (string | null)[];
+  turn: string;
+  /** The four cells that won, when someone did. */
+  line?: number[];
+};
+
+export type NimMatch = {
+  game: 'nim';
+  /** Matches left per row (starts at 3, 5, 7). Whoever takes the last one loses. */
+  rows: number[];
+  turn: string;
+  last?: { by: string; row: number; count: number };
+};
+
+export type BoxesMatch = {
+  game: 'cajas';
+  /** Boxes per side (3 → 9 boxes, odd so there is no tie). */
+  size: number;
+  /** `(size + 1) * size` horizontal edges: index = row * size + col, row 0 at the top. */
+  horizontal: (string | null)[];
+  /** `size * (size + 1)` vertical edges: index = row * (size + 1) + col. */
+  vertical: (string | null)[];
+  /** `size * size` boxes, who closed each. */
+  boxes: (string | null)[];
+  turn: string;
+  score: Record<string, number>;
+};
+
+export type CursedCardMatch = {
+  game: 'carta';
+  /** How many cards are face down on the table. */
+  cards: number;
+  /** Cards already flipped (all safe, or the game would be over). */
+  flipped: { card: number; by: string }[];
+  turn: string;
+  /** Revealed when the match ends: which one was cursed. */
+  cursed?: number;
+};
+
+export type TapRaceMatch = {
+  game: 'taps';
+  seconds: number;
+  /** Final count per person, once they ran their race. */
+  counts: Record<string, number>;
+};
+
+export type SecretNumberMatch = {
+  game: 'numero';
+  max: number;
+  /** Who already picked (without saying what). */
+  picked: string[];
+  /** Revealed when both picked. */
+  picks?: Record<string, number>;
+  target?: number;
+};
+
+export type SimonMatch = {
+  game: 'simon';
+  /** Colors 0–3. The whole thing is public: it is a memory game, not a secret one. */
+  sequence: number[];
+  /** `reached` = levels completed; `done` once they failed or finished the sequence. */
+  runs: Record<string, { reached: number; done: boolean }>;
+};
+
+export type BattleshipMatch = {
+  game: 'naval';
+  size: number;
+  /** Ship lengths of each fleet, e.g. [3, 2, 2]. */
+  ships: number[];
+  /** Shots each person fired at the other's board. */
+  shots: Record<string, { cell: number; hit: boolean }[]>;
+  /** Ships each person has sunk. */
+  sunk: Record<string, number>;
+  turn: string;
+  /** Revealed when the match ends: each person's ship cells. */
+  fleets?: Record<string, number[][]>;
+};
+
+export type PosterGuessMatch = {
+  game: 'poster';
+  posterPath: string;
+  hint: string | null;
+  /** Epoch ms when it started: the poster gets clearer with time, on every phone alike. */
+  startedAt: number;
+  stages: number;
+  stageSeconds: number;
+  guesses: Record<string, { text: string; hit: boolean }[]>;
+  maxGuesses: number;
+  /** Revealed when the match ends. */
+  title?: string;
+};
+
+export type TimelineMatch = {
+  game: 'linea';
+  /** Shuffled; the years are the secret. */
+  items: { entryId: string; title: string; posterPath: string | null }[];
+  /** Each person's order, as item indexes from oldest to newest. */
+  orders: Record<string, number[]>;
+  /** Revealed when the match ends. */
+  correct?: number[];
+  years?: number[];
+};
+
 export type Match =
   | RpsMatch
   | MemoryMatch
@@ -226,6 +360,16 @@ export type Match =
   | DiceMatch
   | TriviaMatch
   | HigherLowerMatch
+  | ConnectFourMatch
+  | NimMatch
+  | BoxesMatch
+  | CursedCardMatch
+  | TapRaceMatch
+  | SecretNumberMatch
+  | SimonMatch
+  | BattleshipMatch
+  | PosterGuessMatch
+  | TimelineMatch
   | CoinMatch;
 
 /** A watched movie with everything the trivia can ask about. */
@@ -264,6 +408,11 @@ export type NightSecret = {
   wordle?: { word: string };
   trivia?: { correct: number[] };
   higherLower?: { sequence: number[] };
+  cursedCard?: { cursed: number };
+  secretNumber?: { picks: Record<string, number> };
+  battleship?: { fleets: Record<string, number[][]> };
+  poster?: { title: string };
+  timeline?: { correct: number[]; years: number[] };
 };
 
 /** The row without the secret: the only thing that travels to the browser. */
@@ -279,7 +428,17 @@ export type Move =
   | { game: 'tateti'; cell: number }
   | { game: 'dados' }
   | { game: 'trivia'; answer: number }
-  | { game: 'mayormenor'; guess: Guess };
+  | { game: 'mayormenor'; guess: Guess }
+  | { game: 'cuatro'; col: number }
+  | { game: 'nim'; row: number; count: number }
+  | { game: 'cajas'; edge: 'h' | 'v'; index: number }
+  | { game: 'carta'; card: number }
+  | { game: 'taps'; count: number }
+  | { game: 'numero'; pick: number }
+  | { game: 'simon'; input: number[] }
+  | { game: 'naval'; cell: number }
+  | { game: 'poster'; guess: string }
+  | { game: 'linea'; order: number[] };
 
 /* -------------------------------- helpers -------------------------------- */
 

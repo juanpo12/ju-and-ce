@@ -170,9 +170,9 @@ export default async function Ficha({ params }: { params: Promise<{ id: string }
           )}
 
           {entrada.sinopsis && (
-            <section>
+            <section className="tarjeta px-4 py-4">
               <h2 className="mb-1.5 font-titulo text-3xl text-tinta">De qué va</h2>
-              <p className="max-w-prose text-[0.95rem] leading-relaxed text-tinta-suave">
+              <p className="max-w-prose text-[0.95rem] leading-relaxed text-tinta">
                 {entrada.sinopsis}
               </p>
             </section>

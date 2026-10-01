@@ -312,7 +312,7 @@ function Dialogo({ resultado, onCerrar }: { resultado: Resultado | null; onCerra
         )}
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Boton type="button" variante="fantasma" onClick={onCerrar}>
+          <Boton type="button" variante="suave" onClick={onCerrar}>
             Cancelar
           </Boton>
           <Boton type="submit" disabled={guardando} className="py-2.5">
