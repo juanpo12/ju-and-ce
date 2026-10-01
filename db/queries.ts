@@ -21,7 +21,7 @@ import {
 } from './index';
 import { createHash, randomBytes } from 'node:crypto';
 import { hoyISO, ZONA_LIBRETA } from '@/lib/fechas';
-import { LIVE_PHASES, type Card, type Game, type PublicNight } from '@/lib/movie-night';
+import { LIVE_PHASES, type Card, type Game, type LibraryEntry, type PublicNight } from '@/lib/movie-night';
 import type { HangmanTitle } from '@/lib/games/hangman';
 
 /* ---------------------------------------------------------------------------
@@ -686,20 +686,48 @@ export async function transitionNight(
 }
 
 /** The watched movies, with what the games need: cards and titles. */
-export async function gameAssets(userId: string): Promise<{ cards: Card[]; titles: HangmanTitle[] }> {
+export type GameAssets = { cards: Card[]; titles: HangmanTitle[]; library: LibraryEntry[] };
+
+/**
+ * The watched movies, with everything the games need: cards for memory,
+ * titles for hangman, and the full entry (director, runtime, genres, the
+ * stars each one gave it) for the trivia. The ratings come in a second query
+ * instead of a join: two people, a few hundred rows, and it reads better.
+ */
+export async function gameAssets(userId: string): Promise<GameAssets> {
   return comoUsuario(userId, async (tx) => {
-    const rows = await tx
-      .select({
-        entryId: vEntradasPuntuadas.id,
-        title: vEntradasPuntuadas.titulo,
-        year: vEntradasPuntuadas.anio,
-        posterPath: vEntradasPuntuadas.posterPath,
-        genres: vEntradasPuntuadas.generos,
-      })
-      .from(vEntradasPuntuadas)
-      .where(eq(vEntradasPuntuadas.estado, 'vista'));
+    const [rows, stars] = await Promise.all([
+      tx
+        .select({
+          entryId: vEntradasPuntuadas.id,
+          title: vEntradasPuntuadas.titulo,
+          year: vEntradasPuntuadas.anio,
+          director: peliculas.director,
+          durationMin: vEntradasPuntuadas.duracionMin,
+          posterPath: vEntradasPuntuadas.posterPath,
+          genres: vEntradasPuntuadas.generos,
+        })
+        .from(vEntradasPuntuadas)
+        .leftJoin(
+          peliculas,
+          and(eq(peliculas.tmdbId, vEntradasPuntuadas.tmdbId), eq(peliculas.tipo, vEntradasPuntuadas.tipo)),
+        )
+        .where(eq(vEntradasPuntuadas.estado, 'vista')),
+      tx
+        .select({ entryId: puntajes.entradaId, personId: puntajes.perfilId, stars: puntajes.estrellas })
+        .from(puntajes),
+    ]);
+
+    const library: LibraryEntry[] = rows.map((r) => ({
+      ...r,
+      director: r.director ?? null,
+      ratings: Object.fromEntries(
+        stars.filter((s) => s.entryId === r.entryId).map((s) => [s.personId, s.stars]),
+      ),
+    }));
     return {
-      cards: rows.map(({ genres: _g, ...c }) => c),
+      library,
+      cards: rows.map((r) => ({ entryId: r.entryId, title: r.title, year: r.year, posterPath: r.posterPath })),
       titles: rows.map((r) => ({ title: r.title, year: r.year, genre: r.genres[0] ?? null })),
     };
   });

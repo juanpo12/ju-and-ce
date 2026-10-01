@@ -18,6 +18,10 @@ const DESCRIPTION: Record<Game, string> = {
   memoria: 'Un tablero con pósters de lo que ya vieron. Por turnos: acertás, seguís.',
   ahorcado: 'Un título de la biblioteca. Una letra por turno, o arriesgá.',
   wordle: 'La misma palabra de cinco letras para los dos. Menos intentos gana.',
+  tateti: 'El de siempre, por turnos. Si empatan tres veces, moneda.',
+  dados: 'Cada uno tira dos dados. El número más alto se lleva la ronda, al mejor de 3.',
+  trivia: 'Cinco preguntas sobre lo que ya vieron: años, directores, quién puso más estrellas.',
+  mayormenor: 'Las mismas cartas para los dos: ¿la próxima es más alta o más baja? La racha más larga gana.',
   moneda: 'Sin jugar: cara o cruz.',
 };
 
@@ -246,6 +250,36 @@ function GameIcon({ game }: { game: Game }) {
             <rect x="3" y="16" width="5" height="5" rx="1" />
             <rect x="9.5" y="16" width="5" height="5" rx="1" fill="currentColor" />
             <rect x="16" y="16" width="5" height="5" rx="1" />
+          </>
+        )}
+        {game === 'tateti' && (
+          <>
+            <path d="M9 3v18M15 3v18M3 9h18M3 15h18" />
+            <path d="M4.5 4.5l3 3M7.5 4.5l-3 3" />
+            <circle cx="18" cy="18" r="1.6" />
+          </>
+        )}
+        {game === 'dados' && (
+          <>
+            <rect x="3" y="3" width="11" height="11" rx="2.5" />
+            <circle cx="6.5" cy="6.5" r="0.9" fill="currentColor" />
+            <circle cx="10.5" cy="10.5" r="0.9" fill="currentColor" />
+            <path d="M14 10h4.5a2.5 2.5 0 0 1 2.5 2.5V18.5a2.5 2.5 0 0 1-2.5 2.5H12.5a2.5 2.5 0 0 1-2.5-2.5V14" />
+            <circle cx="16" cy="16" r="0.9" fill="currentColor" />
+          </>
+        )}
+        {game === 'trivia' && (
+          <>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M9.6 9.5a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .9-1 1.6v.4" />
+            <circle cx="12" cy="16.6" r="0.7" fill="currentColor" />
+          </>
+        )}
+        {game === 'mayormenor' && (
+          <>
+            <rect x="4" y="5" width="9" height="13" rx="1.8" />
+            <path d="M13 7.5l4.5-1.2a1.5 1.5 0 0 1 1.8 1.1l2.2 8.6a1.5 1.5 0 0 1-1.1 1.8L17 19" />
+            <path d="M8.5 9.5v4M6.5 11.5h4" />
           </>
         )}
         {game === 'moneda' && (

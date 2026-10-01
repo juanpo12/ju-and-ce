@@ -79,14 +79,17 @@ export function Outcome({ table, pending }: { table: Table; pending: Pendiente[]
     : winner.id === me.id
       ? '¡Ganaste!'
       : `Ganó ${winner.nombre}`;
+  const surrendered = night.state.surrenderedBy;
   const detail = !winner
     ? 'Los dos propusieron la misma. No hubo nada que definir.'
-    : [
-        night.game ? `${winner.id === me.id ? 'Ganaste' : 'Ganó'} ${AT_GAME[night.game]}` : null,
-        night.state.tiebreak ? 'después de empatar: lo definió la moneda' : null,
-      ]
-        .filter(Boolean)
-        .join(', ');
+    : surrendered
+      ? `${surrendered === me.id ? 'Te rendiste' : `${nameOf(table, surrendered)} se rindió`}${night.game ? ` ${AT_GAME[night.game]}` : ''}.`
+      : [
+          night.game ? `${winner.id === me.id ? 'Ganaste' : 'Ganó'} ${AT_GAME[night.game]}` : null,
+          night.state.tiebreak ? 'después de empatar: lo definió la moneda' : null,
+        ]
+          .filter(Boolean)
+          .join(', ');
 
   return (
     <motion.section

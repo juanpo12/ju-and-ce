@@ -12,7 +12,7 @@ import type { Night, Tipo } from '@/db/schema';
 /** The same values as the checks on `noches` in the database. */
 export const NIGHT_MODES = ['individual', 'duo'] as const;
 export const NIGHT_PHASES = ['esperando', 'candidatas', 'juego', 'jugando', 'terminada', 'cancelada'] as const;
-export const GAMES = ['ppt', 'memoria', 'ahorcado', 'wordle', 'moneda'] as const;
+export const GAMES = ['ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor', 'moneda'] as const;
 
 export type Mode = (typeof NIGHT_MODES)[number];
 
@@ -33,6 +33,10 @@ export const GAME_NAME: Record<Game, string> = {
   memoria: 'Memoria',
   ahorcado: 'Ahorcado',
   wordle: 'La palabra',
+  tateti: 'Tateti',
+  dados: 'Dados',
+  trivia: 'Trivia de la libreta',
+  mayormenor: 'Mayor o menor',
   moneda: 'Moneda',
 };
 
@@ -42,6 +46,10 @@ export const AT_GAME: Record<Game, string> = {
   memoria: 'a la memoria',
   ahorcado: 'al ahorcado',
   wordle: 'a la palabra',
+  tateti: 'al tateti',
+  dados: 'a los dados',
+  trivia: 'a la trivia',
+  mayormenor: 'a mayor o menor',
   moneda: 'a la moneda',
 };
 
@@ -155,7 +163,83 @@ export type CoinMatch = {
   tossedBy: string;
 };
 
-export type Match = RpsMatch | MemoryMatch | HangmanMatch | WordleMatch | CoinMatch;
+export type TicTacToeMatch = {
+  game: 'tateti';
+  /** Nine cells, each the id of who marked it. */
+  board: (string | null)[];
+  turn: string;
+  /** Who opened the current board: it alternates after a draw. */
+  starter: string;
+  /** Drawn boards so far. At `maxDraws` the coin settles it. */
+  draws: number;
+  maxDraws: number;
+  /** The winning line, when there is one. */
+  line?: number[];
+};
+
+export type Roll = [number, number];
+
+export type DiceMatch = {
+  game: 'dados';
+  /** Rounds already settled. `winner: null` is a tie, replayed. */
+  rounds: { rolls: Record<string, Roll>; winner: string | null }[];
+  /** The rolls of the current round, as they come in. */
+  rolls: Record<string, Roll>;
+  score: Record<string, number>;
+  target: number;
+};
+
+export type TriviaQuestion = {
+  text: string;
+  options: string[];
+  /** The movie the question is about, to show its poster. */
+  about?: { title: string; year: number | null; posterPath: string | null };
+};
+
+export type TriviaMatch = {
+  game: 'trivia';
+  questions: TriviaQuestion[];
+  /** Each person's answers so far (option indexes), in question order. */
+  answers: Record<string, number[]>;
+  /** Revealed when the match ends. */
+  correct?: number[];
+};
+
+export type Guess = 'higher' | 'lower';
+
+export type HigherLowerMatch = {
+  game: 'mayormenor';
+  /** The first card, the same for both. */
+  first: number;
+  /** How many cards the sequence has. */
+  length: number;
+  /** Each person's run: the cards they have seen and how many guesses they got right. */
+  runs: Record<string, { seen: number[]; streak: number; done: boolean }>;
+};
+
+export type Match =
+  | RpsMatch
+  | MemoryMatch
+  | HangmanMatch
+  | WordleMatch
+  | TicTacToeMatch
+  | DiceMatch
+  | TriviaMatch
+  | HigherLowerMatch
+  | CoinMatch;
+
+/** A watched movie with everything the trivia can ask about. */
+export type LibraryEntry = {
+  entryId: string;
+  title: string;
+  year: number | null;
+  director: string | null;
+  durationMin: number | null;
+  genres: string[];
+  posterPath: string | null;
+  /** Stars per person id. */
+  ratings: Record<string, number>;
+};
 
 /* ----------------------------- state and secret --------------------------- */
 
@@ -168,6 +252,8 @@ export type NightState = {
   tiebreak?: { result: string };
   /** Who cancelled. */
   closedBy?: string;
+  /** Who gave up mid-game: the other one wins. */
+  surrenderedBy?: string;
 };
 
 /** What the server needs to referee and must not be shown. */
@@ -176,6 +262,8 @@ export type NightSecret = {
   memory?: { board: Card[] };
   hangman?: { title: string };
   wordle?: { word: string };
+  trivia?: { correct: number[] };
+  higherLower?: { sequence: number[] };
 };
 
 /** The row without the secret: the only thing that travels to the browser. */
@@ -187,7 +275,11 @@ export type Move =
   | { game: 'memoria'; card: number }
   | { game: 'ahorcado'; letter: string }
   | { game: 'ahorcado'; guess: string }
-  | { game: 'wordle'; attempt: string };
+  | { game: 'wordle'; attempt: string }
+  | { game: 'tateti'; cell: number }
+  | { game: 'dados' }
+  | { game: 'trivia'; answer: number }
+  | { game: 'mayormenor'; guess: Guess };
 
 /* -------------------------------- helpers -------------------------------- */
 

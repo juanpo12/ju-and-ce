@@ -67,7 +67,9 @@ export function Keyboard({
               <Key
                 key={l}
                 onClick={() => onLetter(l)}
-                disabled={disabled || state === 'miss' || state === 'used-miss'}
+                // A Wordle miss stays typeable (you may want it anyway); a hangman
+                // letter already played does not.
+                disabled={disabled || state === 'used-hit' || state === 'used-miss'}
                 className={state ? COLOR[state] : undefined}
                 label={l}
               >

@@ -247,8 +247,11 @@ Desde Pendientes, «Noche de peli» elige qué ver. Dos modos:
   al azar); si coinciden, listo; si no, se define jugando: piedra, papel o
   tijera (al mejor de 3), memoria (un tablero con pósters de lo que ya vieron),
   ahorcado (un título de la biblioteca, por turnos), la palabra (la misma de
-  cinco letras para los dos, menos intentos gana) o la moneda. Los empates los
-  define la moneda.
+  cinco letras para los dos, menos intentos gana), tateti, dados (al mejor de
+  3), la trivia de la libreta (cinco preguntas sobre lo que ya vieron: años,
+  directores, duración, quién puso más estrellas), mayor o menor (las mismas
+  cartas para los dos, la racha más larga gana) o la moneda. Los empates los
+  define la moneda, y en cualquier juego se puede rendir: gana el otro.
 
 La sesión es una fila de `noches` con el estado como `jsonb`. Toda transición
 pasa por `transitionNight()` en `db/queries.ts`, que lee la fila con

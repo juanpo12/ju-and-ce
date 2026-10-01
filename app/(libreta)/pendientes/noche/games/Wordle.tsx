@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import { motion } from 'motion/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { playAction } from '@/app/acciones';
 import { Avatar } from '@/components/Avatar';
 import type { WordleHint, WordleMatch } from '@/lib/movie-night';
@@ -13,16 +13,16 @@ import type { Table } from '../types';
 
 const WORD_LENGTH = 5;
 
-const COLOR: Record<WordleHint, string> = {
+const TILE: Record<WordleHint, string> = {
   hit: 'bg-acento text-sobre-acento border-acento',
   near: 'bg-acento-suave text-tinta border-acento',
-  miss: 'bg-borde/60 text-tinta-suave border-borde',
+  miss: 'bg-tinta-suave/15 text-tinta-suave border-transparent',
 };
 
 /**
- * The same word for both, each on their own. You see your own letters; of the
- * other person only the colors: how close they are getting without giving
- * anything away.
+ * The same word for both, each on their own. Your own grid is the big thing on
+ * screen; of the other person you only see colors, so nothing is given away.
+ * A rejected attempt stays typed, with the reason right under the grid.
  */
 export function Wordle({
   table,
@@ -38,22 +38,42 @@ export function Wordle({
   const theirs = match.attempts[other.id] ?? [];
   const done = Boolean(match.result[me.id]);
   const [current, setCurrent] = useState('');
-  const [shaking, setShaking] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [shake, setShake] = useState(0);
 
-  const letter = useCallback(
-    (l: string) => setCurrent((c) => (c.length < WORD_LENGTH ? c + l.toLowerCase() : c)),
-    [],
-  );
-  const backspace = useCallback(() => setCurrent((c) => c.slice(0, -1)), []);
+  // Only the row that just came back flips; older rows stay still.
+  const revealed = useRef(mine.length);
+  const [flipping, setFlipping] = useState<number | null>(null);
+  useEffect(() => {
+    if (mine.length > revealed.current) {
+      revealed.current = mine.length;
+      setFlipping(mine.length - 1);
+    }
+  }, [mine.length]);
+
+  const letter = useCallback((l: string) => {
+    setError(null);
+    setCurrent((c) => (c.length < WORD_LENGTH ? c + l.toLowerCase() : c));
+  }, []);
+  const backspace = useCallback(() => {
+    setError(null);
+    setCurrent((c) => c.slice(0, -1));
+  }, []);
   const submit = useCallback(() => {
-    if (current.length !== WORD_LENGTH || busy || done) {
-      if (current.length !== WORD_LENGTH) setShaking((s) => s + 1);
+    if (busy || done) return;
+    if (current.length !== WORD_LENGTH) {
+      setError('Tienen que ser cinco letras.');
+      setShake((s) => s + 1);
       return;
     }
     const attempt = current;
-    void send(() => playAction(night.id, { game: 'wordle', attempt })).then(() => {
-      // If the server rejected it, the attempt is not in the list: keep it typed so it can be fixed.
-      setCurrent((c) => (c === attempt ? '' : c));
+    void send(() => playAction(night.id, { game: 'wordle', attempt }), { quiet: true }).then((rejected) => {
+      if (rejected) {
+        setError(rejected);
+        setShake((s) => s + 1);
+      } else {
+        setCurrent('');
+      }
     });
   }, [current, busy, done, send, night.id]);
 
@@ -71,7 +91,8 @@ export function Wordle({
     return best;
   };
 
-  const myRows = Array.from({ length: match.maxAttempts }, (_, i) => mine[i] ?? null);
+  const rows = Array.from({ length: match.maxAttempts }, (_, i) => mine[i] ?? null);
+  const theirHits = theirs.length ? Math.max(...theirs.map((a) => a.hints.filter((h) => h === 'hit').length)) : 0;
 
   return (
     <section>
@@ -82,90 +103,107 @@ export function Wordle({
         detail={`Cinco letras, ${match.maxAttempts} intentos. Menos intentos gana.`}
       />
 
-      <div className="mb-4 flex items-start justify-center gap-5">
-        {/* My grid, with letters. */}
-        <div className="flex flex-col items-center gap-1.5">
-          <span className="flex items-center gap-1 text-xs text-tinta-suave">
-            <Avatar persona={me} medida="chico" /> vos
-          </span>
-          <div className="flex flex-col gap-1">
-            {myRows.map((row, i) => {
-              const typing = !row && i === mine.length && !done;
-              return (
-                <motion.div
-                  key={i}
-                  className="flex gap-1"
-                  animate={typing && shaking ? { x: [0, -6, 6, -4, 4, 0] } : { x: 0 }}
-                  transition={{ duration: 0.35 }}
-                >
-                  {Array.from({ length: WORD_LENGTH }, (_, k) => {
-                    const l = row ? row.letters[k] : typing ? current[k] : undefined;
-                    const hint = row?.hints[k];
-                    return (
-                      <motion.span
-                        key={k}
-                        initial={false}
-                        animate={hint ? { rotateX: [90, 0] } : { rotateX: 0 }}
-                        transition={{ delay: k * 0.08, duration: 0.3 }}
-                        className={cn(
-                          'flex size-10 items-center justify-center rounded-[calc(var(--radio)-6px)] border-2 font-cartel text-2xl uppercase leading-none sm:size-11',
-                          hint ? COLOR[hint] : l ? 'border-tinta-suave/60 text-tinta' : 'border-borde text-tinta',
-                        )}
-                      >
-                        {l ?? ''}
-                      </motion.span>
-                    );
-                  })}
-                </motion.div>
-              );
-            })}
-          </div>
+      <div className="flex flex-col items-center gap-3">
+        {/* My grid. */}
+        <div className="flex flex-col gap-1.5" aria-label="Tus intentos">
+          {rows.map((row, i) => {
+            const typing = !row && i === mine.length && !done;
+            return (
+              <motion.div
+                key={i}
+                className="flex gap-1.5"
+                animate={typing && shake ? { x: [0, -8, 8, -5, 5, 0] } : { x: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                {Array.from({ length: WORD_LENGTH }, (_, k) => {
+                  const l = row ? row.letters[k] : typing ? current[k] : undefined;
+                  const hint = row?.hints[k];
+                  const flip = flipping === i;
+                  return (
+                    <motion.span
+                      key={k}
+                      initial={false}
+                      animate={flip ? { rotateX: [90, 0], scale: [1, 1.06, 1] } : typing && l ? { scale: [1.12, 1] } : { rotateX: 0, scale: 1 }}
+                      transition={flip ? { delay: k * 0.12, duration: 0.35 } : { duration: 0.12 }}
+                      className={cn(
+                        'flex size-12 items-center justify-center rounded-[calc(var(--radio)-4px)] border-2 font-cartel text-3xl uppercase leading-none shadow-baja sm:size-14 sm:text-4xl',
+                        hint
+                          ? TILE[hint]
+                          : typing
+                            ? l
+                              ? 'border-acento bg-superficie text-tinta'
+                              : 'border-acento/50 bg-superficie text-tinta'
+                            : 'border-borde bg-superficie/60 text-tinta',
+                      )}
+                    >
+                      {l ?? ''}
+                    </motion.span>
+                  );
+                })}
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* The other person's grid, colors only. */}
-        <div className="flex flex-col items-center gap-1.5">
-          <span className="flex items-center gap-1 text-xs text-tinta-suave">
-            <Avatar persona={other} medida="chico" /> {other.nombre}
-          </span>
-          <div className="flex flex-col gap-1" aria-label={`${other.nombre}: ${theirs.length} intentos`}>
+        <div className="min-h-6 text-center" aria-live="polite">
+          <AnimatePresence mode="wait">
+            {error ? (
+              <motion.p key={error} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-sm font-semibold text-acento">
+                {error}
+              </motion.p>
+            ) : done ? (
+              <motion.p key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-tinta-suave">
+                {match.result[me.id] === 'solved' ? `La sacaste en ${mine.length}. ` : 'Se te acabaron los intentos. '}
+                Esperando a {other.nombre}…
+              </motion.p>
+            ) : (
+              <motion.p key="hint" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-tinta-suave">
+                Escribí cinco letras y tocá «Listo».
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* The other person's progress: colors only. */}
+        <div className="tarjeta flex w-full max-w-sm items-center gap-3 px-3 py-2">
+          <Avatar persona={other} />
+          <div className="min-w-0 flex-1 text-xs text-tinta-suave">
+            <span className="block font-semibold text-tinta">{other.nombre}</span>
+            {match.result[other.id] === 'solved'
+              ? `La sacó en ${theirs.length}`
+              : match.result[other.id] === 'failed'
+                ? 'No la sacó'
+                : theirs.length === 0
+                  ? 'Todavía no probó'
+                  : `${theirs.length} ${theirs.length === 1 ? 'intento' : 'intentos'} · ${theirHits} en su lugar`}
+          </div>
+          <div className="flex flex-col gap-0.5" aria-label={`${other.nombre}: ${theirs.length} intentos`}>
             {Array.from({ length: match.maxAttempts }, (_, i) => (
-              <div key={i} className="flex gap-1">
+              <div key={i} className="flex gap-0.5">
                 {Array.from({ length: WORD_LENGTH }, (_, k) => {
                   const hint = theirs[i]?.hints[k];
                   return (
                     <span
                       key={k}
-                      className={cn('size-4 rounded-[3px] border sm:size-5', hint ? COLOR[hint] : 'border-borde')}
+                      className={cn('size-2.5 rounded-[2px] border', hint ? TILE[hint] : 'border-borde')}
                     />
                   );
                 })}
               </div>
             ))}
           </div>
-          {match.result[other.id] && (
-            <p className="text-xs text-tinta-suave">
-              {match.result[other.id] === 'solved' ? `La sacó en ${theirs.length}` : 'No la sacó'}
-            </p>
-          )}
+        </div>
+
+        <div className="w-full pt-1">
+          <Keyboard
+            onLetter={letter}
+            onBackspace={backspace}
+            onEnter={submit}
+            stateOf={stateOf}
+            disabled={done || busy}
+          />
         </div>
       </div>
-
-      {done ? (
-        <p className="mb-4 text-center text-sm text-tinta-suave" aria-live="polite">
-          {match.result[me.id] === 'solved' ? `La sacaste en ${mine.length}. ` : 'Se te acabaron los intentos. '}
-          Esperando a {other.nombre}…
-        </p>
-      ) : (
-        <p className="mb-3 text-center text-xs text-tinta-suave">Escribí una palabra de cinco letras y tocá «Listo».</p>
-      )}
-
-      <Keyboard
-        onLetter={letter}
-        onBackspace={backspace}
-        onEnter={submit}
-        stateOf={stateOf}
-        disabled={done || busy}
-      />
     </section>
   );
 }

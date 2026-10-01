@@ -11,10 +11,25 @@ import { pairCount, startMemory, applyMemory } from './memory';
 import { normalize, mask, isEligible, startHangman, applyLetter, applyGuess } from './hangman';
 import { score, applyAttempt, startWordle } from './wordle';
 import { applyMove, startMatch, isValidMove } from './index';
+import { startTicTacToe, applyCell } from './tictactoe';
+import { startDice, applyRoll, sum } from './dice';
+import { startTrivia, applyAnswer } from './trivia';
+import { startHigherLower, applyHigherLower } from './higherlower';
 import { TARGETS, isValidWord } from './words';
-import type { Card } from '@/lib/movie-night';
+import type { Card, HigherLowerMatch, LibraryEntry } from '@/lib/movie-night';
 
 const P: [string, string] = ['juan', 'ceci'];
+
+const library: LibraryEntry[] = Array.from({ length: 8 }, (_, i) => ({
+  entryId: `e${i}`,
+  title: `Peli ${i}`,
+  year: 2000 + i,
+  director: `Director ${i % 5}`,
+  durationMin: 90 + i * 7,
+  genres: [['Drama', 'Comedia', 'Terror', 'Acción', 'Romance'][i % 5]!],
+  posterPath: null,
+  ratings: { juan: 3 + (i % 3) * 0.5, ceci: 4 - (i % 2) },
+}));
 
 const cards: Card[] = Array.from({ length: 8 }, (_, i) => ({
   entryId: `e${i}`,
@@ -206,6 +221,8 @@ test('index: start, play, coin and move validation', () => {
     starter: 'ceci',
     cards,
     titles: cards.map((c) => ({ title: c.title, year: c.year, genre: null })),
+    library,
+    names: { juan: 'Juan', ceci: 'Ceci' },
   };
   const rng = seededRng(11);
 
@@ -213,16 +230,20 @@ test('index: start, play, coin and move validation', () => {
   assert.ok(coin.end && P.includes(coin.end.winnerId));
 
   const rps = startMatch('ppt', ctx, rng);
-  const r = applyMove(rps.match, rps.secret, 'juan', { game: 'ppt', throw: 'rock' }, P);
+  const r = applyMove(rps.match, rps.secret, 'juan', { game: 'ppt', throw: 'rock' }, P, rng);
   assert.equal(r.secret.rps?.juan, 'rock');
   assert.throws(
-    () => applyMove(rps.match, rps.secret, 'juan', { game: 'wordle', attempt: 'calle' }, P),
+    () => applyMove(rps.match, rps.secret, 'juan', { game: 'wordle', attempt: 'calle' }, P, rng),
     /no es de este juego/,
   );
 
-  const nothingWatched = { ...ctx, cards: [], titles: [] };
+  const nothingWatched = { ...ctx, cards: [], titles: [], library: [] };
   assert.throws(() => startMatch('memoria', nothingWatched, rng), /pelis vistas/);
   assert.throws(() => startMatch('ahorcado', nothingWatched, rng), /peli vista/);
+  assert.throws(() => startMatch('trivia', nothingWatched, rng), /preguntas/);
+  for (const game of ['tateti', 'dados', 'trivia', 'mayormenor'] as const) {
+    assert.equal(startMatch(game, ctx, rng).match.game, game);
+  }
 
   assert.equal(isValidMove({ game: 'ppt', throw: 'paper' }), true);
   assert.equal(isValidMove({ game: 'ppt', throw: 'lizard' }), false);
@@ -231,5 +252,100 @@ test('index: start, play, coin and move validation', () => {
   assert.equal(isValidMove({ game: 'ahorcado', letter: 'a' }), true);
   assert.equal(isValidMove({ game: 'ahorcado', guess: 'Elvis' }), true);
   assert.equal(isValidMove({ game: 'wordle', attempt: 'calle' }), true);
+  assert.equal(isValidMove({ game: 'tateti', cell: 4 }), true);
+  assert.equal(isValidMove({ game: 'dados' }), true);
+  assert.equal(isValidMove({ game: 'trivia', answer: 1 }), true);
+  assert.equal(isValidMove({ game: 'mayormenor', guess: 'higher' }), true);
+  assert.equal(isValidMove({ game: 'mayormenor', guess: 'same' }), false);
   assert.equal(isValidMove(null), false);
+});
+
+test('tic-tac-toe: turns, a line, and draws that reset the board', () => {
+  let m = startTicTacToe('juan');
+  assert.throws(() => applyCell(m, 'ceci', 0, P), /No es tu turno/);
+  m = applyCell(m, 'juan', 0, P).match;
+  assert.throws(() => applyCell(m, 'ceci', 0, P), /ocupada/);
+  m = applyCell(m, 'ceci', 3, P).match;
+  m = applyCell(m, 'juan', 1, P).match;
+  m = applyCell(m, 'ceci', 4, P).match;
+  const win = applyCell(m, 'juan', 2, P);
+  assert.deepEqual(win.end, { winnerId: 'juan' });
+  assert.deepEqual(win.match.line, [0, 1, 2]);
+
+  // A draw: X O X / X O O / O X X, then the board resets and Ceci opens.
+  let d = startTicTacToe('juan');
+  for (const [who, cell] of [['juan', 0], ['ceci', 1], ['juan', 2], ['ceci', 4], ['juan', 3], ['ceci', 5], ['juan', 7], ['ceci', 6], ['juan', 8]] as const) {
+    const r = applyCell(d, who, cell, P);
+    d = r.match;
+    assert.equal(r.end, undefined);
+  }
+  assert.equal(d.draws, 1);
+  assert.equal(d.turn, 'ceci');
+  assert.ok(d.board.every((c) => c === null));
+});
+
+test('dice: both roll, higher sum takes the round, best of 3', () => {
+  const rng = seededRng(5);
+  let m = startDice(P);
+  let r = applyRoll(m, 'juan', P, rng);
+  assert.ok(r.match.rolls.juan);
+  assert.throws(() => applyRoll(r.match, 'juan', P, rng), /Ya tiraste/);
+  let rounds = 0;
+  let end: { winnerId: string } | undefined;
+  m = r.match;
+  while (!end && rounds < 30) {
+    for (const who of P) {
+      if (m.rolls[who]) continue;
+      const step = applyRoll(m, who, P, rng);
+      m = step.match;
+      if (step.end) end = step.end;
+    }
+    rounds++;
+  }
+  assert.ok(end && P.includes(end.winnerId));
+  assert.equal(m.score[end!.winnerId], 2);
+  assert.ok(m.rounds.every((x) => x.winner === null || sum(x.rolls[x.winner]!) > sum(x.rolls[x.winner === 'juan' ? 'ceci' : 'juan']!)));
+});
+
+test('trivia: questions about the library, more hits wins', () => {
+  const rng = seededRng(9);
+  const { match, correct } = startTrivia(library, { juan: 'Juan', ceci: 'Ceci' }, rng);
+  assert.equal(match.questions.length, 5);
+  assert.equal(correct.length, 5);
+  assert.ok(match.questions.every((q, i) => q.options.length >= 2 && correct[i]! < q.options.length));
+  assert.ok(match.questions.every((q) => q.about?.title));
+  const titles = match.questions.map((q) => q.about!.title);
+  assert.equal(new Set(titles).size, titles.length, 'each question about a different movie');
+
+  let m = match;
+  for (let i = 0; i < 5; i++) m = applyAnswer(m, correct, 'juan', correct[i]!, P).match;
+  assert.throws(() => applyAnswer(m, correct, 'juan', 0, P), /Ya respondiste/);
+  for (let i = 0; i < 4; i++) m = applyAnswer(m, correct, 'ceci', (correct[i]! + 1) % m.questions[i]!.options.length, P).match;
+  const end = applyAnswer(m, correct, 'ceci', correct[4]!, P);
+  assert.deepEqual(end.end, { winnerId: 'juan' });
+  assert.deepEqual(end.match.correct, correct, 'revealed at the end');
+});
+
+test('higher or lower: same sequence, longer run wins, ends early when settled', () => {
+  const seq = [5, 9, 2, 7, 7 + 1, 3, 10, 1, 13];
+  const start = startHigherLower(P, seededRng(1));
+  assert.equal(start.sequence.length, 9);
+  assert.ok(start.sequence.every((v, i) => v >= 1 && v <= 13 && (i === 0 || v !== start.sequence[i - 1])));
+
+  let m: HigherLowerMatch = { ...start.match, first: seq[0]!, runs: { juan: { seen: [5], streak: 0, done: false }, ceci: { seen: [5], streak: 0, done: false } } };
+  // Juan gets two right and then misses.
+  m = applyHigherLower(m, seq, 'juan', 'higher', P).match; // 9
+  m = applyHigherLower(m, seq, 'juan', 'lower', P).match; // 2
+  let r = applyHigherLower(m, seq, 'juan', 'lower', P); // 7: wrong
+  m = r.match;
+  assert.equal(m.runs.juan!.done, true);
+  assert.equal(m.runs.juan!.streak, 2);
+  assert.equal(r.end, undefined, 'Ceci can still beat 2');
+  assert.throws(() => applyHigherLower(m, seq, 'juan', 'higher', P), /ya terminó/);
+
+  // Ceci gets three right: she already beats Juan, no need to go on.
+  m = applyHigherLower(m, seq, 'ceci', 'higher', P).match;
+  m = applyHigherLower(m, seq, 'ceci', 'lower', P).match;
+  r = applyHigherLower(m, seq, 'ceci', 'higher', P);
+  assert.deepEqual(r.end, { winnerId: 'ceci' });
 });

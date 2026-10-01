@@ -2,8 +2,15 @@ import type { NightResponse } from '@/app/acciones';
 import type { PublicNight } from '@/lib/movie-night';
 import type { Persona } from '@/lib/personas';
 
-/** Sends an action to the server and adopts the row that comes back (or reports the error). */
-export type Send = (action: () => Promise<NightResponse>) => Promise<void>;
+/**
+ * Sends an action to the server and adopts the row that comes back. Resolves
+ * with the error message when the rules rejected the move (and shows it as a
+ * toast unless `quiet`, for screens that display it inline), or null when it went through.
+ */
+export type Send = (
+  action: () => Promise<NightResponse>,
+  options?: { quiet?: boolean },
+) => Promise<string | null>;
 
 /** What every screen of the session needs: the row, the two people and how to move. */
 export type Table = {

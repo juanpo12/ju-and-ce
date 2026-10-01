@@ -1,0 +1,2 @@
+ALTER TABLE "noches" DROP CONSTRAINT "noches_juego_valido";--> statement-breakpoint
+ALTER TABLE "noches" ADD CONSTRAINT "noches_juego_valido" CHECK ("noches"."juego" is null or "noches"."juego" in ('ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor', 'moneda'));

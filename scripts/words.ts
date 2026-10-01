@@ -24,6 +24,16 @@ const DICTIONARY = 'https://raw.githubusercontent.com/lorenbrichter/Words/master
 
 const TARGET_COUNT = 800;
 
+/** Below this many appearances a subtitle token is noise (typos, names), not a word. */
+const MIN_FREQUENCY = 40;
+
+/** Words people here actually use that neither list has: slang and food. */
+const EXTRA = [
+  'birra', 'bondi', 'morfi', 'sushi', 'ramen', 'tacos', 'pucho', 'chori', 'facha', 'posta',
+  'laburo', 'guita', 'pibes', 'bardo', 'joda', 'mates', 'yerba', 'dulce', 'fiaca', 'chamu',
+  'trucha', 'zafar', 'zafas', 'zafo', 'copado', 'groso', 'manso', 'mufas', 'mufa', 'afano',
+].filter((w) => w.length === 5);
+
 /** What the cross does not filter on its own: names, brands, swear words, English. */
 const EXCLUDED = new Set([
   'james', 'henry', 'paris', 'maria', 'simon', 'julia', 'lucas', 'vegas', 'robin', 'bruce',
@@ -64,12 +74,17 @@ for (const line of dictionary.split('\n')) {
 const targets: string[] = [];
 const seen = new Set<string>();
 for (const line of frequency.split('\n')) {
-  const w = normalize(line.split(' ')[0] ?? '');
-  if (!fiveLetters(w) || !valid.has(w) || seen.has(w) || EXCLUDED.has(w)) continue;
+  const [token, count] = line.split(' ');
+  const w = normalize(token ?? '');
+  if (!fiveLetters(w) || seen.has(w)) continue;
   seen.add(w);
-  targets.push(w);
-  if (targets.length === TARGET_COUNT) break;
+  // A frequent token is accepted as an attempt even if the dictionary lacks it
+  // (voseo forms, slang): rejecting a word someone actually says is worse than
+  // accepting a stray name.
+  if (Number(count) >= MIN_FREQUENCY) valid.add(w);
+  if (targets.length < TARGET_COUNT && valid.has(w) && !EXCLUDED.has(w)) targets.push(w);
 }
+for (const w of EXTRA) valid.add(normalize(w));
 
 const sorted = [...valid].sort();
 

@@ -15,6 +15,10 @@ import { RockPaperScissors } from './games/RockPaperScissors';
 import { Memory } from './games/Memory';
 import { Hangman } from './games/Hangman';
 import { Wordle } from './games/Wordle';
+import { TicTacToe } from './games/TicTacToe';
+import { Dice } from './games/Dice';
+import { Trivia } from './games/Trivia';
+import { HigherLower } from './games/HigherLower';
 
 /**
  * The duo session, live. The `noches` row lives here in state: every action
@@ -57,18 +61,20 @@ export function NightSession({
   }
 
   const send: Send = useCallback(
-    (action) =>
+    (action, options) =>
       new Promise((done) => {
         start(async () => {
+          let error: string | null = null;
           try {
             const r = await action();
-            if ('error' in r) toast(r.error);
+            if ('error' in r) error = r.error;
             else adopt(r.night);
           } catch (e) {
             console.error('[night]', e);
-            toast('Algo falló. Probá de nuevo.');
+            error = 'Algo falló. Probá de nuevo.';
           }
-          done();
+          if (error && !options?.quiet) toast(error);
+          done(error);
         });
       }),
     [adopt],
@@ -140,6 +146,14 @@ export function NightSession({
           return <Hangman table={table} match={match} pending={pending} />;
         case 'wordle':
           return <Wordle table={table} match={match} pending={pending} />;
+        case 'tateti':
+          return <TicTacToe table={table} match={match} pending={pending} />;
+        case 'dados':
+          return <Dice table={table} match={match} pending={pending} />;
+        case 'trivia':
+          return <Trivia table={table} match={match} pending={pending} />;
+        case 'mayormenor':
+          return <HigherLower table={table} match={match} pending={pending} />;
         default:
           return null;
       }

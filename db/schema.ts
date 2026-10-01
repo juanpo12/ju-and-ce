@@ -267,7 +267,7 @@ export const nights = pgTable('noches', {
   ),
   check(
     'noches_juego_valido',
-    sql`${t.game} is null or ${t.game} in ('ppt', 'memoria', 'ahorcado', 'wordle', 'moneda')`,
+    sql`${t.game} is null or ${t.game} in ('ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor', 'moneda')`,
   ),
   // One live session per space. This is what makes it safe for both to tap
   // "De a dos" at the same time: the second insert collides and keeps the first.

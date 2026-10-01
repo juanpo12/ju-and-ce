@@ -348,14 +348,15 @@ export async function chooseGameAction(id: string, game: Game): Promise<NightRes
   return withRules(async () => {
     const perfil = await requirePartner();
     if (!GAMES.includes(game)) throw new GameError('Ese juego no existe.');
-    const { cards, titles } = await gameAssets(perfil.id);
+    const assets = await gameAssets(perfil.id);
+    const names = { [perfil.id]: perfil.nombre, [perfil.companero!.id]: perfil.companero!.nombre };
 
     return transitionNight(perfil.id, id, (night) => {
       if (night.phase !== 'juego') throw new GameError('Ya se eligió el juego.');
       const players = playersOf(night);
       const start = startMatch(
         game,
-        { players, starter: otherOf(players, perfil.id), cards, titles },
+        { players, starter: otherOf(players, perfil.id), ...assets, names },
         secureRng(),
       );
       const state = { ...night.state, match: start.match };
@@ -382,7 +383,7 @@ export async function playAction(id: string, move: Move): Promise<NightResponse>
     return transitionNight(perfil.id, id, (night): Transition => {
       if (night.phase !== 'jugando' || !night.state.match) throw new GameError('No hay partida en curso.');
       const players = playersOf(night);
-      const r = applyMove(night.state.match, night.secret, perfil.id, move, players);
+      const r = applyMove(night.state.match, night.secret, perfil.id, move, players, secureRng());
 
       if (!r.end) {
         return { changes: { state: { ...night.state, match: r.match }, secret: r.secret } };
@@ -406,6 +407,31 @@ export async function playAction(id: string, move: Move): Promise<NightResponse>
       };
     }).then((night) => {
       if (night.phase === 'terminada') refrescar('/pendientes/noche');
+      return night;
+    });
+  });
+}
+
+/** Giving up mid-game: the other one wins, and their candidate is the pick. */
+export async function surrenderAction(id: string): Promise<NightResponse> {
+  return withRules(async () => {
+    const perfil = await requirePartner();
+    return transitionNight(perfil.id, id, (night): Transition => {
+      if (night.phase !== 'jugando') throw new GameError('No hay partida de la que rendirse.');
+      const winnerId = otherOf(playersOf(night), perfil.id);
+      const entryId = night.state.candidates?.[winnerId]?.entryId;
+      return {
+        changes: {
+          phase: 'terminada',
+          winnerId,
+          entryId,
+          secret: {},
+          state: { ...night.state, surrenderedBy: perfil.id },
+        },
+        picked: entryId,
+      };
+    }).then((night) => {
+      refrescar('/pendientes/noche');
       return night;
     });
   });
