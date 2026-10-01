@@ -73,7 +73,7 @@ export const perfiles = pgTable('perfiles', {
   color: text('color').notNull().default('terracota'),
   tema: text('tema').notNull().default('papel'),
 }, (t) => [
-  check('perfiles_tema_valido', sql`${t.tema} in ('papel', 'bullet', 'menta', 'tinta', 'pizarra', 'mostaza', 'cacao', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas', 'cine', 'videoclub', 'marea', 'atardecer', 'frutilla', 'galaxia')`),
+  check('perfiles_tema_valido', sql`${t.tema} in ('papel', 'bullet', 'menta', 'tinta', 'pizarra', 'mostaza', 'cacao', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas', 'cine', 'videoclub', 'marea', 'atardecer', 'frutilla', 'galaxia', 'pergamino', 'castillo', 'vitral', 'taberna', 'heraldica', 'druidas', 'alquimia')`),
   index('perfiles_espacio_idx').on(t.espacioId),
   // Los dos se ven entre si: la biblioteca necesita el nombre y el color del otro.
   pgPolicy('perfiles_lectura', {

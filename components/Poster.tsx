@@ -106,14 +106,14 @@ function PosterInventado({
         />
         <span
           aria-hidden
-          className="relative line-clamp-4 pt-[0.15em] font-cartel text-[17cqw] uppercase leading-[0.9] tracking-wide [text-wrap:balance]"
+          className="relative line-clamp-4 pt-[0.15em] font-cartel text-[calc(17cqw*var(--cartel-escala))] uppercase leading-[0.9] tracking-wide [text-wrap:balance]"
         >
           {titulo}
         </span>
         {anio && (
           <span
             aria-hidden
-            className="relative mt-[3cqw] font-cartel text-[9cqw] tracking-[0.2em] opacity-70"
+            className="relative mt-[3cqw] font-cartel text-[calc(9cqw*var(--cartel-escala))] tracking-[0.2em] opacity-70"
           >
             {anio}
           </span>

@@ -85,6 +85,13 @@
       "when": 1790830752050,
       "tag": "0011_mas_temas",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790831578046,
+      "tag": "0012_temas_medievales",
+      "breakpoints": true
     }
   ]
 }

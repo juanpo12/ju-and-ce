@@ -27,6 +27,13 @@ export const TEMAS = [
   'atardecer',
   'frutilla',
   'galaxia',
+  'pergamino',
+  'castillo',
+  'vitral',
+  'taberna',
+  'heraldica',
+  'druidas',
+  'alquimia',
 ] as const;
 export type Tema = (typeof TEMAS)[number];
 export type Modo = 'claro' | 'oscuro';
@@ -36,6 +43,7 @@ export const GRUPOS = [
   { id: 'cuadernos', nombre: 'Cuadernos' },
   { id: 'hadas', nombre: 'De hadas' },
   { id: 'salidas', nombre: 'Salidas' },
+  { id: 'medieval', nombre: 'Medievales' },
 ] as const;
 export type Grupo = (typeof GRUPOS)[number]['id'];
 
@@ -161,6 +169,48 @@ export const PALETAS: Record<Tema, { nombre: string; grupo: Grupo; claro: Muestr
     grupo: 'salidas',
     claro: { fondo: '#eceaf7', acento: '#6a35c9', tinta: '#1f1b33' },
     oscuro: { fondo: '#0c0a1a', acento: '#b89cff', tinta: '#eeecf8' },
+  },
+  pergamino: {
+    nombre: 'Pergamino',
+    grupo: 'medieval',
+    claro: { fondo: '#efe2c2', acento: '#8c1c13', tinta: '#2c2013' },
+    oscuro: { fondo: '#1b1510', acento: '#ec7a5e', tinta: '#efe3c8' },
+  },
+  castillo: {
+    nombre: 'Castillo',
+    grupo: 'medieval',
+    claro: { fondo: '#dcdad3', acento: '#1f4e8c', tinta: '#1c1d22' },
+    oscuro: { fondo: '#15171b', acento: '#8db4f0', tinta: '#ecebe6' },
+  },
+  vitral: {
+    nombre: 'Vitral',
+    grupo: 'medieval',
+    claro: { fondo: '#f0e9dc', acento: '#a3153c', tinta: '#231a2a' },
+    oscuro: { fondo: '#120d18', acento: '#ff7a9c', tinta: '#f3eaf5' },
+  },
+  taberna: {
+    nombre: 'Taberna',
+    grupo: 'medieval',
+    claro: { fondo: '#e8d4b5', acento: '#84460f', tinta: '#1f1207' },
+    oscuro: { fondo: '#1a120b', acento: '#e6a04a', tinta: '#f1e4d0' },
+  },
+  heraldica: {
+    nombre: 'Heráldica',
+    grupo: 'medieval',
+    claro: { fondo: '#efe3cb', acento: '#a01818', tinta: '#2a1414' },
+    oscuro: { fondo: '#170f0f', acento: '#ff7070', tinta: '#f5e9dc' },
+  },
+  druidas: {
+    nombre: 'Bosque de druidas',
+    grupo: 'medieval',
+    claro: { fondo: '#dde5cc', acento: '#6e4a14', tinta: '#182214' },
+    oscuro: { fondo: '#0f1510', acento: '#d3a657', tinta: '#e9efdf' },
+  },
+  alquimia: {
+    nombre: 'Alquimia',
+    grupo: 'medieval',
+    claro: { fondo: '#e6e2ee', acento: '#7a5600', tinta: '#1c1830' },
+    oscuro: { fondo: '#0e0b1c', acento: '#e6c15a', tinta: '#ece8f8' },
   },
 };
 

@@ -1,5 +1,15 @@
 import type { Metadata, Viewport } from 'next';
-import { Bebas_Neue, Caveat, Figtree, Lora } from 'next/font/google';
+import {
+  Bebas_Neue,
+  Caveat,
+  Cinzel,
+  Figtree,
+  IM_Fell_English,
+  Lora,
+  MedievalSharp,
+  Pirata_One,
+  Uncial_Antiqua,
+} from 'next/font/google';
 import { perfilActual } from '@/lib/sesion';
 import { PALETAS, temaValido } from '@/lib/temas';
 import { Proveedores } from '@/components/Proveedores';
@@ -21,6 +31,39 @@ const lora = Lora({
   style: ['italic'],
   variable: '--font-lora',
   display: 'swap',
+});
+
+// Las letras de los temas medievales. Sin `preload`: el navegador baja una
+// sola cuando el tema la usa, los demás no pagan nada por tenerlas.
+// next/font exige literales: no se puede compartir un objeto de opciones.
+const cinzel = Cinzel({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-cinzel' });
+const fell = IM_Fell_English({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  preload: false,
+  variable: '--font-fell',
+});
+const sharp = MedievalSharp({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  preload: false,
+  variable: '--font-sharp',
+});
+const pirata = Pirata_One({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  preload: false,
+  variable: '--font-pirata',
+});
+const uncial = Uncial_Antiqua({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  preload: false,
+  variable: '--font-uncial',
 });
 
 export const metadata: Metadata = {
@@ -65,7 +108,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang="es-AR"
       data-tema={tema}
       suppressHydrationWarning
-      className={`${caveat.variable} ${bebas.variable} ${figtree.variable} ${lora.variable}`}
+      className={`${caveat.variable} ${bebas.variable} ${figtree.variable} ${lora.variable} ${cinzel.variable} ${fell.variable} ${sharp.variable} ${pirata.variable} ${uncial.variable}`}
     >
       <body className="antialiased">
         <Proveedores tema={tema}>{children}</Proveedores>

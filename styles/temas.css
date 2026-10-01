@@ -15,7 +15,7 @@
    - `.dark`: el modo. En claro es una libreta de papel; en oscuro, una sala de
      cine con las luces bajas. Lo maneja next-themes y vive en el navegador.
 
-   Veinte por dos, cuarenta paletas. El acento es el mismo tono en los dos modos: en
+   Veintisiete por dos, cincuenta y cuatro paletas. El acento es el mismo tono en los dos modos: en
    oscuro sube de luminosidad para no perderse, nunca cambia de familia.
 
    Ningún componente escribe un hex a mano — todo sale de estas variables. Los
@@ -24,7 +24,7 @@
 
    Contrastes (WCAG AA, calculados): tinta sobre fondo ≥ 12:1, tinta suave sobre
    superficie ≥ 6:1, acento y colores de persona sobre superficie ≥ 4,5:1, texto
-   de botón sobre acento ≥ 5:1, en las cuarenta.
+   de botón sobre acento ≥ 5:1, en todas.
 --------------------------------------------------------------------------- */
 
 :root,
@@ -49,6 +49,20 @@
   --sobre-persona: #ffffff;
 
   --tipo-cita: var(--font-lora), Georgia, serif;
+  /* Acá y no en el `:root` compartido de abajo: ese bloque va después de los
+     temas y les pisaría el valor. Los medievales traen su propia letra. */
+  --tipo-titulo: var(--font-caveat), cursive;
+  --tipo-cartel: var(--font-bebas), Impact, sans-serif;
+  /* Lo que una tarjeta puede cambiar de tema en tema: grosor y estilo del
+     borde (los medievales usan doble o grueso), y las letras en mayúscula. */
+  --borde-ancho: 1px;
+  --borde-estilo: solid;
+  --titulo-peso: 700;
+  --titulo-mayusculas: none;
+  --titulo-espaciado: 0.01em;
+  /* El afiche inventado dimensiona el título en cqw pensando en Bebas, que es
+     condensada. Una letra ancha necesita achicarse para entrar. */
+  --cartel-escala: 1;
 
   /* Renglones de cuaderno. Sin imágenes, sin peso, escala a cualquier pantalla. */
   --linea: #e3d8c2;
@@ -1166,6 +1180,447 @@
   --estrella: #ffffff;
 }
 
+/* ---------------------------------------------------------------------------
+   Los medievales. Acá el tema no es solo color: cada uno cambia la letra de
+   los títulos y de los números, el borde de las tarjetas (doble como un
+   pergamino, grueso como piedra), la sombra (dura, de grabado) y el radio.
+   Las letras vienen de next/font sin precarga: se baja la del tema en uso.
+--------------------------------------------------------------------------- */
+
+[data-tema='pergamino'] {
+  /* Un pergamino viejo con manchas de humedad, tinta sepia y lacre rojo. */
+  --fondo: #efe2c2;
+  --superficie: #f8f0dc;
+  --superficie-alta: #fdf7e8;
+  --tinta: #2c2013;
+  --tinta-suave: #67523a;
+  --acento: #8c1c13;
+  --sobre-acento: #ffffff;
+  --acento-suave: #ecd3c4;
+  --borde: #c9b182;
+  --estrella-vacia: #c9b58a;
+  --radio: 0.25rem;
+
+  --durazno: #7a5410;
+  --menta: #2f5d4a;
+  --sobre-persona: #ffffff;
+
+  --tipo-titulo: var(--font-fell), Georgia, serif;
+  --tipo-cartel: var(--font-fell), Georgia, serif;
+  --tipo-cita: var(--font-fell), Georgia, serif;
+  --titulo-peso: 400;
+  --borde-ancho: 3px;
+  --borde-estilo: double;
+
+  --mancha: #a8814a;
+  --textura:
+    radial-gradient(ellipse 34% 26% at 18% 22%, color-mix(in srgb, var(--mancha) 22%, transparent), transparent 70%),
+    radial-gradient(ellipse 28% 32% at 82% 68%, color-mix(in srgb, var(--mancha) 18%, transparent), transparent 70%),
+    radial-gradient(ellipse 18% 14% at 64% 14%, color-mix(in srgb, var(--mancha) 14%, transparent), transparent 70%),
+    radial-gradient(ellipse 22% 18% at 30% 84%, color-mix(in srgb, var(--mancha) 16%, transparent), transparent 70%);
+  --textura-tamano: 520px 520px;
+
+  --cartel-escala: 0.56;
+  --sombra-baja: 2px 2px 0 var(--borde);
+  --sombra-alta: 4px 4px 0 var(--borde);
+}
+
+.dark[data-tema='pergamino'] {
+  /* El mismo pergamino, leído a la luz de una vela. */
+  --fondo: #1b1510;
+  --superficie: #27201a;
+  --superficie-alta: #322a22;
+  --tinta: #efe3c8;
+  --tinta-suave: #bfae8c;
+  --acento: #ec7a5e;
+  --sobre-acento: #1b1510;
+  --acento-suave: #4a2a22;
+  --borde: #4d3f2e;
+  --estrella-vacia: #4d4133;
+
+  --durazno: #d9a441;
+  --menta: #8fbf9f;
+  --sobre-persona: #1b1510;
+
+  --mancha: #6b5230;
+  --sombra-baja: 2px 2px 0 var(--borde);
+  --sombra-alta: 4px 4px 0 var(--borde);
+}
+
+[data-tema='castillo'] {
+  /* Muro de piedra, azul real en los estandartes, letras talladas en mayúscula. */
+  --fondo: #dcdad3;
+  --superficie: #f3f1ec;
+  --superficie-alta: #faf9f6;
+  --tinta: #1c1d22;
+  --tinta-suave: #53555d;
+  --acento: #1f4e8c;
+  --sobre-acento: #ffffff;
+  --acento-suave: #d3deef;
+  --borde: #aeaba2;
+  --estrella-vacia: #b4b0a6;
+  --radio: 0.125rem;
+
+  --durazno: #9a5410;
+  --menta: #2d6e5e;
+  --sobre-persona: #ffffff;
+
+  --tipo-titulo: var(--font-cinzel), Georgia, serif;
+  --tipo-cartel: var(--font-cinzel), Georgia, serif;
+  --tipo-cita: var(--font-fell), Georgia, serif;
+  --titulo-peso: 700;
+  --titulo-mayusculas: uppercase;
+  --titulo-espaciado: 0.06em;
+  --borde-ancho: 2px;
+
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'%3E%3Cpath d='M0 1h120M0 31h120M30 1v30M90 31v30M90 -29v30' stroke='%23c6c3ba' stroke-width='3' fill='none'/%3E%3C/svg%3E");
+  --textura-tamano: 120px 60px;
+
+  --cartel-escala: 0.58;
+  /* Cinzel en mayúsculas es ancha: los tamaños de Tailwind bajan un escalón
+     para que «Interestelar» entre en un celular. */
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.875rem;
+  --text-5xl: 2.375rem;
+  --text-6xl: 3rem;
+  --sombra-baja: 0 2px 0 var(--borde);
+  --sombra-alta: 0 4px 0 var(--borde), 0 14px 32px -10px rgb(20 20 30 / 0.3);
+}
+
+.dark[data-tema='castillo'] {
+  /* La torre de noche: piedra oscura y la antorcha azul del estandarte. */
+  --fondo: #15171b;
+  --superficie: #202329;
+  --superficie-alta: #292d34;
+  --tinta: #ecebe6;
+  --tinta-suave: #aaa9a2;
+  --acento: #8db4f0;
+  --sobre-acento: #15171b;
+  --acento-suave: #223349;
+  --borde: #3a3e47;
+  --estrella-vacia: #43474f;
+
+  --durazno: #e9b45b;
+  --menta: #7ec8b2;
+  --sobre-persona: #15171b;
+
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'%3E%3Cpath d='M0 1h120M0 31h120M30 1v30M90 31v30M90 -29v30' stroke='%230d0e11' stroke-width='3' fill='none'/%3E%3C/svg%3E");
+  --sombra-baja: 0 2px 0 var(--borde);
+  --sombra-alta: 0 4px 0 var(--borde), 0 16px 36px -12px rgb(0 0 0 / 0.7);
+}
+
+[data-tema='vitral'] {
+  /* El vitral de la catedral: marfil, plomo en rombos y los paños de color
+     asomando apenas. El rubí es el acento. */
+  --fondo: #f0e9dc;
+  --superficie: #faf6ee;
+  --superficie-alta: #ffffff;
+  --tinta: #231a2a;
+  --tinta-suave: #574a5f;
+  --acento: #a3153c;
+  --sobre-acento: #ffffff;
+  --acento-suave: #f3d3dc;
+  --borde: #c9bca8;
+  --estrella-vacia: #d2c6b2;
+  --radio: 0.375rem;
+
+  --durazno: #8a5a00;
+  --menta: #1f5f8a;
+  --sobre-persona: #ffffff;
+
+  --tipo-titulo: var(--font-cinzel), Georgia, serif;
+  --tipo-cartel: var(--font-cinzel), Georgia, serif;
+  --tipo-cita: var(--font-fell), Georgia, serif;
+  --titulo-peso: 600;
+  --titulo-mayusculas: uppercase;
+  --titulo-espaciado: 0.04em;
+  --borde-ancho: 3px;
+  --borde-estilo: double;
+
+  --plomo: #b9ad99;
+  --textura:
+    repeating-linear-gradient(45deg, transparent 0 42px, color-mix(in srgb, var(--plomo) 70%, transparent) 42px 44px),
+    repeating-linear-gradient(-45deg, transparent 0 42px, color-mix(in srgb, var(--plomo) 70%, transparent) 42px 44px),
+    radial-gradient(circle 60px at 20% 30%, rgb(163 21 60 / 0.07), transparent 100%),
+    radial-gradient(circle 70px at 75% 70%, rgb(31 95 138 / 0.08), transparent 100%),
+    radial-gradient(circle 50px at 80% 15%, rgb(138 90 0 / 0.08), transparent 100%),
+    radial-gradient(circle 55px at 25% 85%, rgb(47 109 74 / 0.07), transparent 100%);
+  --textura-tamano: 62px 62px, 62px 62px, 372px 372px, 372px 372px, 372px 372px, 372px 372px;
+
+  --cartel-escala: 0.58;
+  /* Cinzel en mayúsculas es ancha: los tamaños de Tailwind bajan un escalón
+     para que «Interestelar» entre en un celular. */
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.875rem;
+  --text-5xl: 2.375rem;
+  --text-6xl: 3rem;
+  --sombra-baja: 0 1px 2px rgb(40 20 50 / 0.08), 0 2px 6px rgb(40 20 50 / 0.06);
+  --sombra-alta: 0 2px 4px rgb(40 20 50 / 0.08), 0 14px 32px -10px rgb(40 20 50 / 0.3);
+}
+
+.dark[data-tema='vitral'] {
+  /* La catedral de noche: el vitral se enciende desde adentro. */
+  --fondo: #120d18;
+  --superficie: #1d1626;
+  --superficie-alta: #271e32;
+  --tinta: #f3eaf5;
+  --tinta-suave: #b9a9bf;
+  --acento: #ff7a9c;
+  --sobre-acento: #120d18;
+  --acento-suave: #45202e;
+  --borde: #3d3148;
+  --estrella-vacia: #463a52;
+
+  --durazno: #f0c15a;
+  --menta: #7fc2f0;
+  --sobre-persona: #120d18;
+
+  --plomo: #060409;
+  --textura:
+    repeating-linear-gradient(45deg, transparent 0 42px, var(--plomo) 42px 44px),
+    repeating-linear-gradient(-45deg, transparent 0 42px, var(--plomo) 42px 44px),
+    radial-gradient(circle 60px at 20% 30%, rgb(255 122 156 / 0.12), transparent 100%),
+    radial-gradient(circle 70px at 75% 70%, rgb(127 194 240 / 0.12), transparent 100%),
+    radial-gradient(circle 50px at 80% 15%, rgb(240 193 90 / 0.12), transparent 100%),
+    radial-gradient(circle 55px at 25% 85%, rgb(120 200 150 / 0.1), transparent 100%);
+}
+
+[data-tema='taberna'] {
+  /* Tablones de roble, cerveza ámbar y una letra tallada a cuchillo. */
+  --fondo: #e8d4b5;
+  --superficie: #f7ebd8;
+  --superficie-alta: #fcf4e6;
+  --tinta: #1f1207;
+  --tinta-suave: #5f4a33;
+  --acento: #84460f;
+  --sobre-acento: #ffffff;
+  --acento-suave: #ead6b8;
+  --borde: #b8976a;
+  --estrella-vacia: #c3a57c;
+  --radio: 0.375rem;
+
+  --durazno: #a3261c;
+  --menta: #2c6b4d;
+  --sobre-persona: #ffffff;
+
+  --tipo-titulo: var(--font-sharp), Georgia, serif;
+  --tipo-cartel: var(--font-sharp), Georgia, serif;
+  --tipo-cita: var(--font-fell), Georgia, serif;
+  --titulo-peso: 400;
+  --borde-ancho: 2px;
+
+  --veta: #b08a58;
+  --textura:
+    repeating-linear-gradient(90deg, transparent 0 118px, color-mix(in srgb, var(--veta) 60%, transparent) 118px 121px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--veta) 14%, transparent) 0 2px, transparent 2px 9px, color-mix(in srgb, var(--veta) 8%, transparent) 9px 10px, transparent 10px 23px);
+  --textura-tamano: 121px 100%, 23px 100%;
+
+  --cartel-escala: 0.65;
+  --sombra-baja: 2px 2px 0 var(--borde);
+  --sombra-alta: 4px 4px 0 var(--borde);
+}
+
+.dark[data-tema='taberna'] {
+  /* La taberna a la noche, con el fuego encendido. */
+  --fondo: #1a120b;
+  --superficie: #271a10;
+  --superficie-alta: #322317;
+  --tinta: #f1e4d0;
+  --tinta-suave: #c0a98c;
+  --acento: #e6a04a;
+  --sobre-acento: #1a120b;
+  --acento-suave: #4a2f14;
+  --borde: #4d3621;
+  --estrella-vacia: #4f3a26;
+
+  --durazno: #f07a66;
+  --menta: #8ec79f;
+  --sobre-persona: #1a120b;
+
+  --veta: #0e0804;
+  --sombra-baja: 2px 2px 0 var(--borde);
+  --sombra-alta: 4px 4px 0 var(--borde);
+}
+
+[data-tema='heraldica'] {
+  /* El escudo: gules y oro en escaques, borde negro de xilografía y letra
+     gótica de estandarte. Nada redondeado. */
+  --fondo: #efe3cb;
+  --superficie: #fbf5e6;
+  --superficie-alta: #ffffff;
+  --tinta: #2a1414;
+  --tinta-suave: #5f3d3d;
+  --acento: #a01818;
+  --sobre-acento: #ffffff;
+  --acento-suave: #f2d2cc;
+  --borde: #2a1414;
+  --estrella-vacia: #cdb989;
+  --radio: 0;
+
+  --durazno: #7a5700;
+  --menta: #1f4f8a;
+  --sobre-persona: #ffffff;
+
+  --tipo-titulo: var(--font-pirata), Georgia, serif;
+  --tipo-cartel: var(--font-pirata), Georgia, serif;
+  --tipo-cita: var(--font-fell), Georgia, serif;
+  --titulo-peso: 400;
+  --titulo-espaciado: 0.02em;
+  --borde-ancho: 2px;
+
+  --escaque: #e3d2a8;
+  --textura:
+    linear-gradient(45deg, var(--escaque) 25%, transparent 25% 75%, var(--escaque) 75%),
+    linear-gradient(45deg, var(--escaque) 25%, transparent 25% 75%, var(--escaque) 75%);
+  --textura-tamano: 72px 72px;
+  --textura-posicion: 0 0, 36px 36px;
+
+  --cartel-escala: 0.78;
+  --sombra-baja: 3px 3px 0 var(--borde);
+  --sombra-alta: 5px 5px 0 var(--borde);
+}
+
+.dark[data-tema='heraldica'] {
+  /* El escudo colgado en la sala oscura. */
+  --fondo: #170f0f;
+  --superficie: #241515;
+  --superficie-alta: #2f1c1c;
+  --tinta: #f5e9dc;
+  --tinta-suave: #c3a79c;
+  --acento: #ff7070;
+  --sobre-acento: #170f0f;
+  --acento-suave: #4a1f1f;
+  --borde: #5a3a3a;
+  --estrella-vacia: #4a3030;
+
+  --durazno: #e8c25a;
+  --menta: #86b6f2;
+  --sobre-persona: #170f0f;
+
+  --escaque: #1f1414;
+  --sombra-baja: 3px 3px 0 var(--borde);
+  --sombra-alta: 5px 5px 0 var(--borde);
+}
+
+[data-tema='druidas'] {
+  /* El claro del bosque: musgo, bronce y anillos de piedra entrelazados,
+     con letra uncial de manuscrito celta. */
+  --fondo: #dde5cc;
+  --superficie: #f2f6e7;
+  --superficie-alta: #f9fbf3;
+  --tinta: #182214;
+  --tinta-suave: #4d5a44;
+  --acento: #6e4a14;
+  --sobre-acento: #ffffff;
+  --acento-suave: #e4dcc0;
+  --borde: #a9b58f;
+  --estrella-vacia: #b0bd98;
+  --radio: 1.25rem;
+
+  --durazno: #a83a1e;
+  --menta: #2f6f8f;
+  --sobre-persona: #ffffff;
+
+  --tipo-titulo: var(--font-uncial), Georgia, serif;
+  --tipo-cartel: var(--font-uncial), Georgia, serif;
+  --tipo-cita: var(--font-fell), Georgia, serif;
+  --titulo-peso: 400;
+  --borde-ancho: 2px;
+
+  --anillo: #b7c39c;
+  --textura:
+    radial-gradient(circle at 50% 50%, transparent 24px, var(--anillo) 24px 26px, transparent 26px),
+    radial-gradient(circle at 50% 50%, transparent 24px, var(--anillo) 24px 26px, transparent 26px);
+  --textura-tamano: 72px 72px;
+  --textura-posicion: 0 0, 36px 36px;
+
+  --cartel-escala: 0.54;
+  --sombra-baja: 0 1px 2px rgb(30 50 20 / 0.08), 0 2px 6px rgb(30 50 20 / 0.06);
+  --sombra-alta: 0 2px 4px rgb(30 50 20 / 0.08), 0 14px 32px -10px rgb(30 50 20 / 0.3);
+}
+
+.dark[data-tema='druidas'] {
+  /* El bosque a medianoche, con el bronce brillando. */
+  --fondo: #0f1510;
+  --superficie: #182018;
+  --superficie-alta: #202a20;
+  --tinta: #e9efdf;
+  --tinta-suave: #a8b59c;
+  --acento: #d3a657;
+  --sobre-acento: #0f1510;
+  --acento-suave: #3a3118;
+  --borde: #33432f;
+  --estrella-vacia: #36443a;
+
+  --durazno: #f28a66;
+  --menta: #80c4e6;
+  --sobre-persona: #0f1510;
+
+  --anillo: #1a241a;
+}
+
+[data-tema='alquimia'] {
+  /* El laboratorio del alquimista: índigo, oro y sigilos de círculos
+     concéntricos por detrás. */
+  --fondo: #e6e2ee;
+  --superficie: #f6f4fa;
+  --superficie-alta: #ffffff;
+  --tinta: #1c1830;
+  --tinta-suave: #514b6b;
+  --acento: #7a5600;
+  --sobre-acento: #ffffff;
+  --acento-suave: #ece2bf;
+  --borde: #bdb6d2;
+  --estrella-vacia: #bdb6d2;
+  --radio: 0.5rem;
+
+  --durazno: #a8381f;
+  --menta: #1f6e6e;
+  --sobre-persona: #ffffff;
+
+  --tipo-titulo: var(--font-cinzel), Georgia, serif;
+  --tipo-cartel: var(--font-cinzel), Georgia, serif;
+  --tipo-cita: var(--font-fell), Georgia, serif;
+  --titulo-peso: 600;
+  --titulo-espaciado: 0.03em;
+
+  --sigilo: #7a5600;
+  --textura:
+    radial-gradient(circle at 50% 50%, transparent 58px, color-mix(in srgb, var(--sigilo) 18%, transparent) 58px 59px, transparent 59px, transparent 74px, color-mix(in srgb, var(--sigilo) 14%, transparent) 74px 75px, transparent 75px, transparent 96px, color-mix(in srgb, var(--sigilo) 10%, transparent) 96px 97px, transparent 97px),
+    radial-gradient(circle 1.5px at 50% 50%, color-mix(in srgb, var(--sigilo) 40%, transparent) 0 99%, transparent 0);
+  --textura-tamano: 260px 260px, 52px 52px;
+
+  --cartel-escala: 0.58;
+  /* Cinzel en mayúsculas es ancha: los tamaños de Tailwind bajan un escalón
+     para que «Interestelar» entre en un celular. */
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.875rem;
+  --text-5xl: 2.375rem;
+  --text-6xl: 3rem;
+  --sombra-baja: 0 1px 2px rgb(30 20 60 / 0.08), 0 2px 6px rgb(30 20 60 / 0.06);
+  --sombra-alta: 0 2px 4px rgb(30 20 60 / 0.08), 0 14px 32px -10px rgb(30 20 60 / 0.3);
+}
+
+.dark[data-tema='alquimia'] {
+  /* El laboratorio de noche: los sigilos brillan en oro. */
+  --fondo: #0e0b1c;
+  --superficie: #191430;
+  --superficie-alta: #221b3d;
+  --tinta: #ece8f8;
+  --tinta-suave: #aaa3c8;
+  --acento: #e6c15a;
+  --sobre-acento: #0e0b1c;
+  --acento-suave: #3a311a;
+  --borde: #2f2850;
+  --estrella-vacia: #3b3458;
+
+  --durazno: #f0896c;
+  --menta: #7ad0d0;
+  --sobre-persona: #0e0b1c;
+
+  --sigilo: #e6c15a;
+}
+
 /* En oscuro las capas se marcan con luminosidad, no con sombra — una sombra
    negra sobre casi negro no se ve. Queda solo un filo de luz arriba. */
 .dark {
@@ -1181,8 +1636,6 @@
 :root {
   color-scheme: light;
 
-  --tipo-titulo: var(--font-caveat), cursive;
-  --tipo-cartel: var(--font-bebas), Impact, sans-serif;
   --tipo-texto: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
 
   /* Cortas: esto se usa desde el celular, y una animación de 400ms se siente
@@ -1348,8 +1801,9 @@
 
   h1, h2, h3 {
     font-family: var(--tipo-titulo);
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    font-weight: var(--titulo-peso);
+    letter-spacing: var(--titulo-espaciado);
+    text-transform: var(--titulo-mayusculas);
   }
 
   ::selection {
@@ -1378,7 +1832,7 @@
 @layer components {
   .tarjeta {
     background-color: var(--superficie);
-    border: 1px solid var(--borde);
+    border: var(--borde-ancho) var(--borde-estilo) var(--borde);
     border-radius: var(--radio);
     box-shadow: var(--sombra-baja);
   }
