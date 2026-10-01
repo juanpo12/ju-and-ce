@@ -15,7 +15,7 @@
    - `.dark`: el modo. En claro es una libreta de papel; en oscuro, una sala de
      cine con las luces bajas. Lo maneja next-themes y vive en el navegador.
 
-   Diez por dos, veinte paletas. El acento es el mismo tono en los dos modos: en
+   Veinte por dos, cuarenta paletas. El acento es el mismo tono en los dos modos: en
    oscuro sube de luminosidad para no perderse, nunca cambia de familia.
 
    Ningún componente escribe un hex a mano — todo sale de estas variables. Los
@@ -24,7 +24,7 @@
 
    Contrastes (WCAG AA, calculados): tinta sobre fondo ≥ 12:1, tinta suave sobre
    superficie ≥ 6:1, acento y colores de persona sobre superficie ≥ 4,5:1, texto
-   de botón sobre acento ≥ 5:1, en las veinte.
+   de botón sobre acento ≥ 5:1, en las cuarenta.
 --------------------------------------------------------------------------- */
 
 :root,
@@ -626,6 +626,544 @@
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='220' viewBox='0 0 160 220'%3E%3Cg opacity='0.6'%3E%3Cg transform='translate(40 222) scale(1.9)'%3E%3Cpath d='M0 0 Q-16 -40 -3 -84 Q6 -40 0 0Z' fill='%234f7766'/%3E%3Cpath d='M0 0 Q2 -50 30 -66' stroke='%233d6152' stroke-width='1.4' fill='none'/%3E%3Cpath d='M4.6 -30.8 q1 3.5 0 7.0' stroke='%233d6152' stroke-width='.8' fill='none'/%3E%3Cg transform='translate(4.6 -23.8) scale(1.00)'%3E%3Cpath d='M-4 0 Q-5 6 -6 8 Q-3 7 -2 9 Q0 7 2 9 Q3 7 6 8 Q5 6 4 0 Q0 -2 -4 0Z' fill='%23d6e6e2' stroke='%233d6152' stroke-width='.4'/%3E%3C/g%3E%3Cpath d='M7.6 -39.5 q1 3.2 0 6.4' stroke='%233d6152' stroke-width='.8' fill='none'/%3E%3Cg transform='translate(7.6 -33.1) scale(0.90)'%3E%3Cpath d='M-4 0 Q-5 6 -6 8 Q-3 7 -2 9 Q0 7 2 9 Q3 7 6 8 Q5 6 4 0 Q0 -2 -4 0Z' fill='%23d6e6e2' stroke='%233d6152' stroke-width='.4'/%3E%3C/g%3E%3Cpath d='M11.4 -47.2 q1 2.9 0 5.8' stroke='%233d6152' stroke-width='.8' fill='none'/%3E%3Cg transform='translate(11.4 -41.4) scale(0.80)'%3E%3Cpath d='M-4 0 Q-5 6 -6 8 Q-3 7 -2 9 Q0 7 2 9 Q3 7 6 8 Q5 6 4 0 Q0 -2 -4 0Z' fill='%23d6e6e2' stroke='%233d6152' stroke-width='.4'/%3E%3C/g%3E%3Cpath d='M15.9 -53.9 q1 2.6 0 5.2' stroke='%233d6152' stroke-width='.8' fill='none'/%3E%3Cg transform='translate(15.9 -48.7) scale(0.70)'%3E%3Cpath d='M-4 0 Q-5 6 -6 8 Q-3 7 -2 9 Q0 7 2 9 Q3 7 6 8 Q5 6 4 0 Q0 -2 -4 0Z' fill='%23d6e6e2' stroke='%233d6152' stroke-width='.4'/%3E%3C/g%3E%3Cpath d='M21.2 -59.6 q1 2.3 0 4.6' stroke='%233d6152' stroke-width='.8' fill='none'/%3E%3Cg transform='translate(21.2 -55.0) scale(0.60)'%3E%3Cpath d='M-4 0 Q-5 6 -6 8 Q-3 7 -2 9 Q0 7 2 9 Q3 7 6 8 Q5 6 4 0 Q0 -2 -4 0Z' fill='%23d6e6e2' stroke='%233d6152' stroke-width='.4'/%3E%3C/g%3E%3Cpath d='M27.3 -64.3 q1 2.0 0 4.0' stroke='%233d6152' stroke-width='.8' fill='none'/%3E%3Cg transform='translate(27.3 -60.3) scale(0.50)'%3E%3Cpath d='M-4 0 Q-5 6 -6 8 Q-3 7 -2 9 Q0 7 2 9 Q3 7 6 8 Q5 6 4 0 Q0 -2 -4 0Z' fill='%23d6e6e2' stroke='%233d6152' stroke-width='.4'/%3E%3C/g%3E%3C/g%3E%3Cg transform='translate(100 222) rotate(8) scale(1.3)'%3E%3Cpath d='M0 0 Q4 -40 -6 -70 Q-14 -76 -10 -64' stroke='%233d6152' stroke-width='1.3' fill='none'/%3E%3Cpath d='M0.7 -7.9 q-12 -3 -14 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M0.7 -7.9 q12 -3 14 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M1.0 -15.6 q-11 -3 -13 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M1.0 -15.6 q11 -3 13 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M1.1 -23.1 q-10 -3 -12 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M1.1 -23.1 q10 -3 12 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M1.0 -30.4 q-9 -3 -11 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M1.0 -30.4 q9 -3 11 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M0.5 -37.5 q-8 -3 -10 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M0.5 -37.5 q8 -3 10 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M-0.2 -44.4 q-7 -3 -9 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M-0.2 -44.4 q7 -3 9 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M-1.3 -51.1 q-6 -3 -8 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M-1.3 -51.1 q6 -3 8 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M-2.6 -57.6 q-5 -3 -7 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3Cpath d='M-2.6 -57.6 q5 -3 7 -8' stroke='%233d6152' stroke-width='1' fill='none'/%3E%3C/g%3E%3Cg transform='translate(130 220) scale(.8)'%3E%3Cpath d='M-5 0 Q-7 -16 -4 -20 L4 -20 Q7 -16 5 0 Q0 2 -5 0Z' fill='%23b7aea2'/%3E%3Cpath d='M-4 -12 Q0 -10 4 -12 L4.6 -14 Q0 -12 -4.6 -14Z' fill='%23a8707e' opacity='.35'/%3E%3Cpath d='M-20 -18 Q-19 -40 0 -41 Q19 -40 20 -18 Q0 -22 -20 -18Z' fill='%23a8707e'/%3E%3Cpath d='M-18 -19 Q0 -16 18 -19' stroke='%23b7aea2' stroke-width='1' fill='none' opacity='.7'/%3E%3Ccircle cx='-9' cy='-30' r='2.6' fill='%23d9cfd2'/%3E%3Ccircle cx='3' cy='-35' r='2' fill='%23d9cfd2'/%3E%3Ccircle cx='11' cy='-26' r='2.4' fill='%23d9cfd2'/%3E%3Ccircle cx='-2' cy='-25' r='1.5' fill='%23d9cfd2'/%3E%3C/g%3E%3Cpath d='M120 86 Q120.72 89.28 124 90 Q120.72 90.72 120 94 Q119.28 90.72 116 90 Q119.28 89.28 120 86Z' fill='%23e6c15a' opacity='1'/%3E%3C/g%3E%3C/svg%3E"),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120' viewBox='0 0 160 120'%3E%3Cg opacity='0.6'%3E%3Cpath d='M120 25 A17 17 0 1 0 120 59 A21.2 21.2 0 0 1 120 25Z' fill='%23e6c15a' opacity='1'/%3E%3Cpath d='M70 21.5 Q70.81 25.19 74.5 26 Q70.81 26.81 70 30.5 Q69.19 26.81 65.5 26 Q69.19 25.19 70 21.5Z' fill='%23e6c15a' opacity='1'/%3E%3Cpath d='M148 89 Q148.54 91.46 151 92 Q148.54 92.54 148 95 Q147.46 92.54 145 92 Q147.46 91.46 148 89Z' fill='%23e6c15a' opacity='1'/%3E%3Cpath d='M30 66.5 Q30.63 69.37 33.5 70 Q30.63 70.63 30 73.5 Q29.37 70.63 26.5 70 Q29.37 69.37 30 66.5Z' fill='%23e6c15a' opacity='1'/%3E%3Ccircle cx='90' cy='60' r='1' fill='%23e6c15a'/%3E%3Ccircle cx='50' cy='44' r='1.2' fill='%23e6c15a'/%3E%3Ccircle cx='100' cy='96' r='0.9' fill='%23e6c15a'/%3E%3C/g%3E%3C/svg%3E"),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'%3E%3Cg opacity='0.5'%3E%3Cpath d='M40 35 Q40.9 39.1 45 40 Q40.9 40.9 40 45 Q39.1 40.9 35 40 Q39.1 39.1 40 35Z' fill='%23e6c15a' opacity='1'/%3E%3Cpath d='M190 86.5 Q190.63 89.37 193.5 90 Q190.63 90.63 190 93.5 Q189.37 90.63 186.5 90 Q189.37 89.37 190 86.5Z' fill='%23e6c15a' opacity='1'/%3E%3Cpath d='M110 195.5 Q110.81 199.19 114.5 200 Q110.81 200.81 110 204.5 Q109.19 200.81 105.5 200 Q109.19 199.19 110 195.5Z' fill='%23e6c15a' opacity='1'/%3E%3Cpath d='M250 237 Q250.54 239.46 253 240 Q250.54 240.54 250 243 Q249.46 240.54 247 240 Q249.46 239.46 250 237Z' fill='%23e6c15a' opacity='1'/%3E%3Ccircle cx='90' cy='110' r='1.2' fill='%23e6c15a'/%3E%3Ccircle cx='230' cy='30' r='1' fill='%23e6c15a'/%3E%3Ccircle cx='30' cy='230' r='1.1' fill='%23e6c15a'/%3E%3Ccircle cx='160' cy='160' r='0.9' fill='%23e6c15a'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------------------
+   Los diez de la segunda tanda. Pensados desde el celular: texturas que se
+   leen a 360px de ancho sin ensuciar el texto, hechas con degradados (o un
+   SVG de dos líneas) para que no pesen nada. Contrastes verificados igual que
+   los anteriores.
+--------------------------------------------------------------------------- */
+
+[data-tema='tinta'] {
+  /* Tinta china sobre papel de arroz: nada de color, solo negro y crema. El
+     acento es la misma tinta un poco más tenue, así un botón sigue siendo un
+     botón sin inventar un color que no está en la paleta. */
+  --fondo: #f4f3ef;
+  --superficie: #fcfbf8;
+  --superficie-alta: #ffffff;
+  --tinta: #151515;
+  --tinta-suave: #555350;
+  --acento: #2b2b2b;
+  --sobre-acento: #ffffff;
+  --acento-suave: #e6e4dd;
+  --borde: #dfddd5;
+  --estrella-vacia: #cfcdc4;
+  --radio: 0.5rem;
+
+  --durazno: #a0561c;
+  --menta: #2e6e8e;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--font-lora), Georgia, serif;
+
+  /* Trama de pincel en diagonal, apenas. */
+  --linea: #e8e6df;
+  --textura: repeating-linear-gradient(45deg, transparent 0 11px, var(--linea) 11px 12px);
+  --textura-tamano: auto;
+
+  --sombra-baja: 0 1px 2px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(0 0 0 / 0.06), 0 14px 32px -10px rgb(0 0 0 / 0.28);
+}
+
+.dark[data-tema='tinta'] {
+  /* El negativo: tinta blanca sobre papel negro. */
+  --fondo: #121212;
+  --superficie: #1c1c1c;
+  --superficie-alta: #262626;
+  --tinta: #f1f0ec;
+  --tinta-suave: #aaa8a2;
+  --acento: #e8e6e0;
+  --sobre-acento: #121212;
+  --acento-suave: #2e2e2c;
+  --borde: #2d2d2d;
+  --estrella-vacia: #3b3b3b;
+
+  --durazno: #f0a060;
+  --menta: #7cc4e8;
+  --sobre-persona: #121212;
+
+  --linea: #191919;
+}
+
+[data-tema='pizarra'] {
+  /* La hoja cuadriculada de la escuela, gris pizarra y azul de lapicera. */
+  --fondo: #e8ecef;
+  --superficie: #f8f9fb;
+  --superficie-alta: #ffffff;
+  --tinta: #1c2630;
+  --tinta-suave: #4e5b68;
+  --acento: #2a5d8f;
+  --sobre-acento: #ffffff;
+  --acento-suave: #d8e4f0;
+  --borde: #d3dae0;
+  --estrella-vacia: #c2cad2;
+  --radio: 0.625rem;
+
+  --durazno: #a0530e;
+  --menta: #2f7a5a;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--tipo-texto);
+
+  --linea: #d9dfe4;
+  --textura:
+    linear-gradient(var(--linea) 1px, transparent 1px),
+    linear-gradient(90deg, var(--linea) 1px, transparent 1px);
+  --textura-tamano: 1.5rem 1.5rem;
+
+  --sombra-baja: 0 1px 2px rgb(20 35 50 / 0.06), 0 2px 6px rgb(20 35 50 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(20 35 50 / 0.06), 0 14px 32px -10px rgb(20 35 50 / 0.26);
+}
+
+.dark[data-tema='pizarra'] {
+  /* De noche la cuadrícula es un pizarrón verde con la tiza marcada. */
+  --fondo: #16221d;
+  --superficie: #1f2d27;
+  --superficie-alta: #283831;
+  --tinta: #edf3ef;
+  --tinta-suave: #a4b6ac;
+  --acento: #8ec9ea;
+  --sobre-acento: #16221d;
+  --acento-suave: #223a44;
+  --borde: #2d3f38;
+  --estrella-vacia: #3a4d45;
+
+  --durazno: #f1b765;
+  --menta: #8fd3b0;
+  --sobre-persona: #16221d;
+
+  --linea: #1c2923;
+}
+
+[data-tema='mostaza'] {
+  /* Los setenta: mostaza, oliva y un damero muy tenue de mantel de cocina. */
+  --fondo: #f6efd8;
+  --superficie: #fdf9ec;
+  --superficie-alta: #ffffff;
+  --tinta: #2b2416;
+  --tinta-suave: #5f5540;
+  --acento: #8f5a00;
+  --sobre-acento: #ffffff;
+  --acento-suave: #f1e2bd;
+  --borde: #e5dbbb;
+  --estrella-vacia: #d6caa3;
+  --radio: 1rem;
+
+  --durazno: #b3401e;
+  --menta: #4e6a26;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--tipo-texto);
+
+  --cuadro: #efe6c6;
+  --textura:
+    linear-gradient(45deg, var(--cuadro) 25%, transparent 25% 75%, var(--cuadro) 75%),
+    linear-gradient(45deg, var(--cuadro) 25%, transparent 25% 75%, var(--cuadro) 75%);
+  --textura-tamano: 2.5rem 2.5rem;
+  --textura-posicion: 0 0, 1.25rem 1.25rem;
+
+  --sombra-baja: 0 1px 2px rgb(60 45 10 / 0.06), 0 2px 6px rgb(60 45 10 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(60 45 10 / 0.06), 0 14px 32px -10px rgb(60 45 10 / 0.26);
+}
+
+.dark[data-tema='mostaza'] {
+  --fondo: #1a1610;
+  --superficie: #262018;
+  --superficie-alta: #302920;
+  --tinta: #f5efe0;
+  --tinta-suave: #bdb29a;
+  --acento: #f0b640;
+  --sobre-acento: #1a1610;
+  --acento-suave: #3d3018;
+  --borde: #3a3226;
+  --estrella-vacia: #4a4133;
+
+  --durazno: #f28a68;
+  --menta: #a7cc78;
+  --sobre-persona: #1a1610;
+
+  --cuadro: #1f1a13;
+}
+
+[data-tema='cacao'] {
+  /* Chocolate caliente: crema, cacao y el vapor que sube de la taza. */
+  --fondo: #f3e9df;
+  --superficie: #fcf6f0;
+  --superficie-alta: #ffffff;
+  --tinta: #2a1d14;
+  --tinta-suave: #5d4b3d;
+  --acento: #6b3d1f;
+  --sobre-acento: #ffffff;
+  --acento-suave: #ecd9c8;
+  --borde: #e2d3c3;
+  --estrella-vacia: #d2bfab;
+  --radio: 1.125rem;
+
+  --durazno: #b2440f;
+  --menta: #2d6f5a;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--font-lora), Georgia, serif;
+
+  /* Vapor: dos manchas grandes y blandas, flotando. */
+  --vapor: #ffffff;
+  --textura:
+    radial-gradient(ellipse 36% 22% at 20% 18%, color-mix(in srgb, var(--vapor) 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 30% 26% at 78% 62%, color-mix(in srgb, var(--vapor) 45%, transparent), transparent 70%);
+  --textura-tamano: 100% 100%;
+  --textura-repetir: no-repeat;
+
+  --sombra-baja: 0 1px 2px rgb(50 30 15 / 0.06), 0 2px 6px rgb(50 30 15 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(50 30 15 / 0.06), 0 14px 32px -10px rgb(50 30 15 / 0.28);
+}
+
+.dark[data-tema='cacao'] {
+  /* Chocolate amargo con caramelo. */
+  --fondo: #171210;
+  --superficie: #221b18;
+  --superficie-alta: #2c231f;
+  --tinta: #f4ebe3;
+  --tinta-suave: #bba89b;
+  --acento: #d9a079;
+  --sobre-acento: #171210;
+  --acento-suave: #3a2a20;
+  --borde: #352a25;
+  --estrella-vacia: #45382f;
+
+  --durazno: #f08a5b;
+  --menta: #80c9b0;
+  --sobre-persona: #171210;
+
+  --vapor: #d9a079;
+  --textura:
+    radial-gradient(ellipse 36% 22% at 20% 18%, color-mix(in srgb, var(--vapor) 10%, transparent), transparent 70%),
+    radial-gradient(ellipse 30% 26% at 78% 62%, color-mix(in srgb, var(--vapor) 8%, transparent), transparent 70%);
+}
+
+[data-tema='cine'] {
+  /* La sala: crema de pochoclo y el rojo del telón, con sus pliegues apenas
+     marcados de lado a lado. */
+  --fondo: #f8f0e4;
+  --superficie: #fffaf2;
+  --superficie-alta: #ffffff;
+  --tinta: #2a1a1b;
+  --tinta-suave: #5e4a4c;
+  --acento: #b3202c;
+  --sobre-acento: #ffffff;
+  --acento-suave: #f5d9d6;
+  --borde: #e8dccb;
+  --estrella-vacia: #d8c9b4;
+  --radio: 0.75rem;
+
+  --durazno: #8a5a0a;
+  --menta: #2f6b6a;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--font-lora), Georgia, serif;
+
+  --pliegue: #b3202c;
+  --textura: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    color-mix(in srgb, var(--pliegue) 5%, transparent) 26px,
+    transparent 52px
+  );
+  --textura-tamano: auto;
+
+  --sombra-baja: 0 1px 2px rgb(60 20 25 / 0.06), 0 2px 6px rgb(60 20 25 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(60 20 25 / 0.06), 0 14px 32px -10px rgb(60 20 25 / 0.28);
+}
+
+.dark[data-tema='cine'] {
+  /* Las luces se apagan: el telón queda en penumbra y el rojo se enciende. */
+  --fondo: #140d0e;
+  --superficie: #201517;
+  --superficie-alta: #2a1c1f;
+  --tinta: #f6ebe6;
+  --tinta-suave: #bda7a3;
+  --acento: #f26b76;
+  --sobre-acento: #140d0e;
+  --acento-suave: #3e1f24;
+  --borde: #362326;
+  --estrella-vacia: #463034;
+
+  --durazno: #e9bb5e;
+  --menta: #7ccbc5;
+  --sobre-persona: #140d0e;
+
+  --pliegue: #f26b76;
+}
+
+[data-tema='videoclub'] {
+  /* El videoclub del barrio: gris de carátula y magenta de VHS, con las líneas
+     de la tele de tubo cruzando la hoja. */
+  --fondo: #eef0f5;
+  --superficie: #fafbfe;
+  --superficie-alta: #ffffff;
+  --tinta: #1e2030;
+  --tinta-suave: #555a70;
+  --acento: #c2187a;
+  --sobre-acento: #ffffff;
+  --acento-suave: #f6d7e9;
+  --borde: #dcdfe8;
+  --estrella-vacia: #c9cdd9;
+  --radio: 0.5rem;
+
+  --durazno: #9a5200;
+  --menta: #1f6f8f;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--tipo-texto);
+
+  --linea: #e3e6ee;
+  --textura: repeating-linear-gradient(to bottom, transparent 0 3px, var(--linea) 3px 4px);
+  --textura-tamano: auto;
+
+  --sombra-baja: 0 1px 2px rgb(30 32 60 / 0.06), 0 2px 6px rgb(30 32 60 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(30 32 60 / 0.06), 0 14px 32px -10px rgb(30 32 60 / 0.26);
+}
+
+.dark[data-tema='videoclub'] {
+  /* El neón de la vidriera a la noche. */
+  --fondo: #0f1119;
+  --superficie: #191b26;
+  --superficie-alta: #222433;
+  --tinta: #eceef8;
+  --tinta-suave: #a7abc2;
+  --acento: #ff6fc0;
+  --sobre-acento: #0f1119;
+  --acento-suave: #3a1f35;
+  --borde: #2a2d3d;
+  --estrella-vacia: #383b4d;
+
+  --durazno: #f5b457;
+  --menta: #6ccbe8;
+  --sobre-persona: #0f1119;
+
+  --linea: #13151f;
+}
+
+[data-tema='marea'] {
+  /* La orilla: celeste de agua clara y azul petróleo, con olas en línea
+     cruzando la hoja. El SVG lleva el color adentro: en oscuro se redefine. */
+  --fondo: #e5f1f5;
+  --superficie: #f9fcfd;
+  --superficie-alta: #ffffff;
+  --tinta: #1b2a31;
+  --tinta-suave: #4b5e67;
+  --acento: #0b6f93;
+  --sobre-acento: #ffffff;
+  --acento-suave: #d0e7ef;
+  --borde: #cfe0e7;
+  --estrella-vacia: #b9cfd8;
+  --radio: 1.25rem;
+
+  --durazno: #a3541a;
+  --menta: #4f5fb5;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--tipo-texto);
+
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' viewBox='0 0 120 40'%3E%3Cpath d='M0 20q15-12 30 0t30 0t30 0t30 0' fill='none' stroke='%23c3dbe4' stroke-width='1.4'/%3E%3C/svg%3E");
+  --textura-tamano: 120px 40px;
+
+  --sombra-baja: 0 1px 2px rgb(10 50 70 / 0.06), 0 2px 6px rgb(10 50 70 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(10 50 70 / 0.06), 0 14px 32px -10px rgb(10 50 70 / 0.26);
+}
+
+.dark[data-tema='marea'] {
+  /* Mar de noche, con la espuma apenas iluminada. */
+  --fondo: #0b161b;
+  --superficie: #142127;
+  --superficie-alta: #1c2b32;
+  --tinta: #e9f3f6;
+  --tinta-suave: #a0b6bf;
+  --acento: #67c8e6;
+  --sobre-acento: #0b161b;
+  --acento-suave: #173640;
+  --borde: #233640;
+  --estrella-vacia: #30454f;
+
+  --durazno: #f2a46a;
+  --menta: #aeb8f5;
+  --sobre-persona: #0b161b;
+
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' viewBox='0 0 120 40'%3E%3Cpath d='M0 20q15-12 30 0t30 0t30 0t30 0' fill='none' stroke='%23152a33' stroke-width='1.4'/%3E%3C/svg%3E");
+}
+
+[data-tema='atardecer'] {
+  /* El cielo cuando baja el sol: durazno abajo, lila arriba, y el sol todavía
+     asomando por el borde de la pantalla. Es una sola luz, no se repite:
+     en el celular queda arriba del todo, como corresponde. */
+  --fondo: #f9e9e0;
+  --superficie: #fff8f3;
+  --superficie-alta: #ffffff;
+  --tinta: #2d1f2a;
+  --tinta-suave: #604e5c;
+  --acento: #8b3a7e;
+  --sobre-acento: #ffffff;
+  --acento-suave: #f0d9ec;
+  --borde: #ecd9d0;
+  --estrella-vacia: #dcc6bc;
+  --radio: 1.5rem;
+
+  --durazno: #a24d12;
+  --menta: #2f6f7a;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--font-lora), Georgia, serif;
+
+  --sol: #ffb37a;
+  --cielo: #c9a3d6;
+  --textura:
+    radial-gradient(90% 40% at 50% -8%, color-mix(in srgb, var(--sol) 70%, transparent), transparent 70%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--cielo) 30%, transparent), transparent 45%);
+  --textura-tamano: 100% 100%;
+  --textura-repetir: no-repeat;
+
+  --sombra-baja: 0 1px 2px rgb(70 30 50 / 0.06), 0 2px 6px rgb(70 30 50 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(70 30 50 / 0.06), 0 14px 32px -10px rgb(70 30 50 / 0.26);
+}
+
+.dark[data-tema='atardecer'] {
+  /* Ya se fue el sol: queda el resplandor violeta y una luna lila. */
+  --fondo: #1b1220;
+  --superficie: #261a2c;
+  --superficie-alta: #312337;
+  --tinta: #f5ebf2;
+  --tinta-suave: #b9a7b5;
+  --acento: #e39ad8;
+  --sobre-acento: #1b1220;
+  --acento-suave: #3e2541;
+  --borde: #3a2a3e;
+  --estrella-vacia: #4a3850;
+
+  --durazno: #f5a16e;
+  --menta: #7fcbd6;
+  --sobre-persona: #1b1220;
+
+  --sol: #e39ad8;
+  --cielo: #f5a16e;
+  --textura:
+    radial-gradient(90% 40% at 50% -8%, color-mix(in srgb, var(--sol) 22%, transparent), transparent 70%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--cielo) 8%, transparent), transparent 45%);
+}
+
+[data-tema='frutilla'] {
+  /* Frutilla con crema: rosa pálido, rojo frutilla y las semillitas
+     desparramadas, en elipses chiquitas como las del granizado. */
+  --fondo: #fdeef0;
+  --superficie: #fffafa;
+  --superficie-alta: #ffffff;
+  --tinta: #2d1b20;
+  --tinta-suave: #634c53;
+  --acento: #c62f66;
+  --sobre-acento: #ffffff;
+  --acento-suave: #f9d7e2;
+  --borde: #f0d8dd;
+  --estrella-vacia: #e3c3ca;
+  --radio: 1.25rem;
+
+  --durazno: #9b5a08;
+  --menta: #2d7360;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--tipo-texto);
+
+  --semilla: #c6a84a;
+  --textura:
+    radial-gradient(ellipse 2.4px 3.2px at 14% 22%, color-mix(in srgb, var(--semilla) 60%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 3px 2.2px at 66% 12%, color-mix(in srgb, var(--semilla) 50%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2.2px 3px at 38% 58%, color-mix(in srgb, var(--semilla) 55%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 3.2px 2.4px at 88% 48%, color-mix(in srgb, var(--semilla) 45%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2.4px 3px at 10% 80%, color-mix(in srgb, var(--semilla) 52%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 3px 2.2px at 56% 86%, color-mix(in srgb, var(--semilla) 48%, transparent) 0 99%, transparent 0),
+    radial-gradient(ellipse 2.2px 2.8px at 78% 74%, color-mix(in srgb, var(--semilla) 50%, transparent) 0 99%, transparent 0);
+  --textura-tamano: 140px 140px;
+
+  --sombra-baja: 0 1px 2px rgb(80 20 40 / 0.06), 0 2px 6px rgb(80 20 40 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(80 20 40 / 0.06), 0 14px 32px -10px rgb(80 20 40 / 0.26);
+}
+
+.dark[data-tema='frutilla'] {
+  /* Frutilla al chocolate. */
+  --fondo: #1a1014;
+  --superficie: #26181d;
+  --superficie-alta: #301f26;
+  --tinta: #f8ecef;
+  --tinta-suave: #bfa7ae;
+  --acento: #ff85ad;
+  --sobre-acento: #1a1014;
+  --acento-suave: #45212f;
+  --borde: #3a262d;
+  --estrella-vacia: #4a333b;
+
+  --durazno: #f0bb63;
+  --menta: #85cfb8;
+  --sobre-persona: #1a1014;
+
+  --semilla: #5a4a2a;
+}
+
+[data-tema='galaxia'] {
+  /* Un cielo de día lila con estrellas que apenas se adivinan; de noche se
+     encienden todas. Puntos de tres tamaños, ninguno más grande que una
+     letra, para que no compitan con el texto en una pantalla chica. */
+  --fondo: #eceaf7;
+  --superficie: #f9f8fe;
+  --superficie-alta: #ffffff;
+  --tinta: #1f1b33;
+  --tinta-suave: #565170;
+  --acento: #6a35c9;
+  --sobre-acento: #ffffff;
+  --acento-suave: #e4daf8;
+  --borde: #dcd8ec;
+  --estrella-vacia: #c9c4e0;
+  --radio: 1rem;
+
+  --durazno: #a4500f;
+  --menta: #1f7281;
+  --sobre-persona: #ffffff;
+
+  --tipo-cita: var(--font-lora), Georgia, serif;
+
+  --estrella: #6a35c9;
+  --textura:
+    radial-gradient(circle 1.6px at 12% 18%, color-mix(in srgb, var(--estrella) 45%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1px at 64% 9%, color-mix(in srgb, var(--estrella) 35%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 2px at 41% 52%, color-mix(in srgb, var(--estrella) 40%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1px at 86% 64%, color-mix(in srgb, var(--estrella) 35%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1.4px at 8% 81%, color-mix(in srgb, var(--estrella) 40%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1px at 55% 88%, color-mix(in srgb, var(--estrella) 30%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1.6px at 29% 36%, color-mix(in srgb, var(--estrella) 35%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1px at 93% 27%, color-mix(in srgb, var(--estrella) 45%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1.2px at 74% 45%, color-mix(in srgb, var(--estrella) 30%, transparent) 0 99%, transparent 0),
+    radial-gradient(circle 1px at 20% 62%, color-mix(in srgb, var(--estrella) 40%, transparent) 0 99%, transparent 0);
+  --textura-tamano: 240px 240px;
+
+  --sombra-baja: 0 1px 2px rgb(40 30 90 / 0.06), 0 2px 6px rgb(40 30 90 / 0.05);
+  --sombra-alta: 0 2px 4px rgb(40 30 90 / 0.06), 0 14px 32px -10px rgb(40 30 90 / 0.26);
+}
+
+.dark[data-tema='galaxia'] {
+  /* El cielo de verdad: casi negro azulado y las estrellas prendidas. */
+  --fondo: #0c0a1a;
+  --superficie: #161328;
+  --superficie-alta: #1f1b34;
+  --tinta: #eeecf8;
+  --tinta-suave: #aaa6c6;
+  --acento: #b89cff;
+  --sobre-acento: #0c0a1a;
+  --acento-suave: #2a2149;
+  --borde: #2a2642;
+  --estrella-vacia: #383354;
+
+  --durazno: #f2ad5f;
+  --menta: #74cfdc;
+  --sobre-persona: #0c0a1a;
+
+  --estrella: #ffffff;
 }
 
 /* En oscuro las capas se marcan con luminosidad, no con sombra — una sombra
