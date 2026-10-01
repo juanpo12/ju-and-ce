@@ -85,10 +85,12 @@ solo. El plan hobby sobra para dos personas.
 | `npm run db:seed` | Carga las tres películas |
 | `npm run alta` | Crea la libreta y suma personas |
 | `npm run iconos` | Regenera los PNG del manifest |
+| `npm run juegos:test` | La lógica de los juegos de la noche de peli, sin base |
+| `npm run palabras` | Regenera la lista de palabras del juego de la palabra |
 | `npm run typecheck` | `tsc --noEmit` |
 
 `npm run db:test` no necesita nada: corre Postgres 18 dentro de Node (PGlite) con
-un shim mínimo de Supabase. Son 37 casos y es la prueba de cada cambio de
+un shim mínimo de Supabase. Son 56 casos y es la prueba de cada cambio de
 esquema.
 
 ## Cómo está armado
@@ -106,17 +108,20 @@ app/
     page.tsx              Biblioteca
     peli/[id]/            Ficha
     agregar/ pendientes/ resumen/ ajustes/
+    pendientes/noche/     la noche de peli: el dado, la sesión de a dos y los juegos
 components/               Estrellas, Poster, TarjetaPeli, Nav, Boton, Vacio
 db/
-  schema.ts               las cinco tablas, las políticas RLS y las vistas
+  schema.ts               las tablas, las políticas RLS y las vistas
   index.ts                los dos clientes: dbAdmin y comoUsuario()
   queries.ts              todo el acceso a datos
   migrations/             versionadas desde el día uno
-  pruebas/                los 37 casos, en local y contra Supabase
+  pruebas/                los 56 casos, en local y contra Supabase
 lib/
   supabase/               client (navegador), server (cookies)
   sesion.ts               perfilActual() y exigirPerfil()
   tmdb.ts                 el cliente de TMDB, solo servidor
+  noche.ts                los tipos y la máquina de estados de la noche de peli
+  juegos/                 la lógica pura de cada juego, con sus pruebas
 styles/temas.css          los temas como variables CSS
 proxy.ts                  refresco de sesión y guardia de rutas
 db/demo.ts                el Postgres de juguete de `npm run demo`
@@ -229,6 +234,37 @@ Drizzle es solo de TypeScript), `mi_espacio()` va con `search_path = ''` como
 pide el linter de Supabase, y la búsqueda de TMDB devuelve `director` y
 `duracion_min` en null porque `/search` no los trae — se completan al importar,
 que es lo que el propio plan explica dos párrafos después del contrato JSON.
+
+### La noche de peli
+
+Desde Pendientes, «Noche de peli» elige qué ver. Dos modos:
+
+- **Que elija el dado.** Un celular: filtros opcionales (peli o serie, género,
+  duración) y un sorteo. «Que sea esta» la deja arriba de Pendientes como «la de
+  esta noche» hasta que la marquen vista o la suelten.
+- **De a dos.** Cada uno en su celular. Uno abre la sesión, el otro la ve
+  aparecer en Pendientes y entra. Cada uno propone una candidata (de la lista o
+  al azar); si coinciden, listo; si no, se define jugando: piedra, papel o
+  tijera (al mejor de 3), memoria (un tablero con pósters de lo que ya vieron),
+  ahorcado (un título de la biblioteca, por turnos), la palabra (la misma de
+  cinco letras para los dos, menos intentos gana) o la moneda. Los empates los
+  define la moneda.
+
+La sesión es una fila de `noches` con el estado como `jsonb`. Toda transición
+pasa por `transicionarNoche()` en `db/queries.ts`, que lee la fila con
+`for update`, aplica la regla y sube `version`: dos jugadas simultáneas se
+serializan. Los dos celulares la siguen por un canal propio de Realtime
+(`SesionNoche.tsx`), que adopta una fila solo si su `version` es mayor. Lo que
+el servidor necesita para arbitrar y no conviene mostrar (la jugada del otro
+antes de revelar, la palabra, el título) va en `secreto`, que se saca antes de
+responder; Realtime igual manda la fila entera, así que queda escondido de la
+pantalla, no de las herramientas del navegador. La fila terminada es el
+historial, y Resumen cuenta quién ganó cuántas.
+
+En la demo anda el dado; la sesión de a dos necesita Supabase, porque no hay
+Realtime. Para que ande en Supabase, `noches` tiene que estar en la publicación
+`supabase_realtime`: la migración 0008 la agrega si la publicación existe, y
+conviene verificarlo en Database → Publications.
 
 ## Qué falta
 

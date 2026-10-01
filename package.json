@@ -15,7 +15,9 @@
     "typecheck": "tsc --noEmit",
     "alta": "tsx db/alta.ts",
     "iconos": "tsx scripts/iconos.ts",
-    "demo": "tsx db/demo.ts"
+    "demo": "tsx db/demo.ts",
+    "juegos:test": "tsx --test lib/juegos/*.prueba.ts",
+    "palabras": "tsx scripts/palabras.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

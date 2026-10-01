@@ -13,7 +13,7 @@
 import { sql, eq, and, type SQL } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import * as schema from '../schema';
-import { entradas, espacios, peliculas, perfiles, puntajes } from '../schema';
+import { entradas, espacios, noches, peliculas, perfiles, puntajes } from '../schema';
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -57,6 +57,8 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
   }
 
   async function limpiar() {
+    await dbAdmin.execute(sql`
+      delete from noches where espacio_id in (${ESPACIO_A}::uuid, ${ESPACIO_B}::uuid)`);
     await dbAdmin.execute(sql`
       delete from puntajes where perfil_id in (${JUAN}::uuid, ${CECI}::uuid, ${INTRUSO}::uuid)`);
     await dbAdmin.execute(sql`
@@ -274,6 +276,74 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
       Number(generos.find((x) => x.genero === 'Drama')?.cantidad) === 2);
     chequear('la pendiente no cuenta para los generos',
       !generos.some((x) => x.genero === 'Animación'));
+  }
+
+  console.log('\nNoches de peli (la sesión y el historial)');
+  {
+    const [creada] = await comoUsuario(JUAN, (tx) =>
+      tx.insert(noches).values({ espacioId: ESPACIO_A, modo: 'duo', fase: 'esperando', creadaPor: JUAN })
+        .returning({ id: noches.id }));
+    chequear('Juan abre una noche en su espacio', creada !== undefined);
+    const nocheId = creada!.id;
+
+    await debeFallar('Intruso NO puede abrir una noche en el espacio ajeno', () =>
+      comoUsuario(INTRUSO, (tx) =>
+        tx.insert(noches).values({ espacioId: ESPACIO_A, modo: 'duo', fase: 'esperando', creadaPor: INTRUSO })),
+    );
+
+    chequear('Ceci ve la noche que abrió Juan', (await contar(CECI, 'noches')) === 1);
+    chequear('Intruso no ve ninguna', (await contar(INTRUSO, 'noches')) === 0);
+
+    const unida = await comoUsuario(CECI, (tx) =>
+      tx.update(noches).set({ fase: 'candidatas', version: 1 }).where(eq(noches.id, nocheId)).returning());
+    chequear('Ceci la actualiza: es del espacio, no de quien la abrió', unida.length === 1);
+
+    const ajena = await comoUsuario(INTRUSO, (tx) =>
+      tx.update(noches).set({ fase: 'cancelada' }).where(eq(noches.id, nocheId)).returning());
+    chequear('Intruso NO puede tocarla', ajena.length === 0);
+
+    await debeFallar('una segunda noche viva en el mismo espacio es rechazada', () =>
+      comoUsuario(CECI, (tx) =>
+        tx.insert(noches).values({ espacioId: ESPACIO_A, modo: 'duo', fase: 'esperando', creadaPor: CECI })),
+    );
+
+    await comoUsuario(JUAN, (tx) =>
+      tx.update(noches).set({ fase: 'terminada', juego: 'ppt', ganadorId: CECI, entradaId: ids.a3, terminadaEn: new Date() })
+        .where(eq(noches.id, nocheId)));
+    const [otra] = await comoUsuario(CECI, (tx) =>
+      tx.insert(noches).values({ espacioId: ESPACIO_A, modo: 'duo', fase: 'esperando', creadaPor: CECI })
+        .returning({ id: noches.id }));
+    chequear('terminada la primera, se puede abrir otra', otra !== undefined);
+
+    await debeFallar('el check rechaza una fase que no existe', () =>
+      dbAdmin.execute(sql`update noches set fase = 'dudando' where id = ${otra!.id}::uuid`));
+    await debeFallar('el check rechaza un juego que no existe', () =>
+      dbAdmin.execute(sql`update noches set juego = 'truco' where id = ${otra!.id}::uuid`));
+
+    const borrada = await comoUsuario(INTRUSO, (tx) =>
+      tx.delete(noches).where(eq(noches.id, nocheId)).returning());
+    chequear('Intruso NO puede borrar el historial ajeno', borrada.length === 0);
+  }
+
+  console.log('\nLa de esta noche (entradas.elegida_en)');
+  {
+    const marcada = await comoUsuario(JUAN, (tx) =>
+      tx.update(entradas).set({ elegidaEn: new Date() }).where(eq(entradas.id, ids.a3)).returning());
+    chequear('Juan marca la pendiente como elegida', marcada.length === 1);
+
+    await debeFallar('dos elegidas en el mismo espacio es rechazado', () =>
+      dbAdmin.execute(sql`update entradas set elegida_en = now() where id = ${ids.a1}::uuid`));
+
+    const ajena = await comoUsuario(INTRUSO, (tx) =>
+      tx.update(entradas).set({ elegidaEn: null }).where(eq(entradas.id, ids.a3)).returning());
+    chequear('Intruso NO puede soltar la elegida ajena', ajena.length === 0);
+
+    const vista = await comoUsuario(JUAN, (tx) =>
+      filas<{ elegida_en: string | null }>(
+        tx, sql`select elegida_en from v_entradas_puntuadas where id = ${ids.a3}::uuid`));
+    chequear('la vista expone elegida_en (se recreó en 0008)', vista[0]?.elegida_en != null);
+
+    await dbAdmin.update(entradas).set({ elegidaEn: null }).where(eq(entradas.id, ids.a3));
   }
 
   console.log('\nLimpiando fixtures…');

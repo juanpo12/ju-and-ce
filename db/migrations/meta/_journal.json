@@ -57,6 +57,13 @@
       "when": 1790811193047,
       "tag": "0007_series",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790818179677,
+      "tag": "0008_noche_de_peli",
+      "breakpoints": true
     }
   ]
 }

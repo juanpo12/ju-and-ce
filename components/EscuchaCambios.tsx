@@ -83,6 +83,13 @@ export function EscuchaCambios({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'puntajes' }, (p) =>
         avisar(p as unknown as Cambio),
       )
+      // Solo el alta de una noche de peli: el banner de Pendientes. Las jugadas
+      // (updates) las sigue la pantalla de la sesión por su propio canal.
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'noches', filter: `espacio_id=eq.${espacioId}` },
+        (p) => avisar(p as unknown as Cambio),
+      )
       .subscribe();
 
     return () => {
@@ -110,6 +117,12 @@ function reaccionar(cambio: Cambio, yo: Persona, otro: Persona | null) {
         Number.isFinite(estrellas) ? `★ ${formatear(estrellas)}` : undefined,
       );
     });
+    return;
+  }
+
+  if (cambio.table === 'noches') {
+    if (cambio.eventType !== 'INSERT' || fila.creada_por !== otro.id || fila.modo !== 'duo') return;
+    avisarConToast(otro, `${otro.nombre} quiere elegir la de esta noche`, 'Entrá desde Pendientes');
     return;
   }
 

@@ -12,18 +12,46 @@ import type { Tipo } from '@/db/schema';
 import {
   borrarEntrada,
   borrarPuntaje,
+  buscarNoche,
   crearEntrada,
   crearInvitacion,
+  crearNoche,
   editarEntrada,
+  fichasParaJuegos,
   guardarAjustes,
   guardarFicha,
   guardarPuntaje,
   invitacionValida,
   liberarInvitacion,
+  listarPendientes,
   marcarComoVista,
+  marcarElegida,
+  registrarEleccionIndividual,
   reservarInvitacion,
   sumarAlEspacio,
+  transicionarNoche,
+  type Transicion,
 } from '@/db/queries';
+import {
+  elOtro,
+  estaViva,
+  filtrarPendientes,
+  filtrosValidos,
+  type Candidata,
+  type FiltrosNoche,
+  type Juego,
+  type JugadaDeJuego,
+  type NochePublica,
+} from '@/lib/noche';
+import { JUEGOS } from '@/lib/noche';
+import { azarSeguro, elegirUno } from '@/lib/juegos/azar';
+import {
+  aplicarJugada,
+  desempatar,
+  esJugadaValida,
+  ErrorDeJuego,
+  iniciarPartida,
+} from '@/lib/juegos/indice';
 
 /**
  * Las mutaciones. Todas pasan por `exigirPerfil()` y de ahí a `comoUsuario()`,
@@ -186,4 +214,217 @@ export async function accionSalir() {
   const supabase = await crearClienteServidor();
   await supabase.auth.signOut();
   redirect('/entrar');
+}
+
+/* ------------------------------ noche de peli ---------------------------- */
+
+export type RespuestaNoche = { noche: NochePublica } | { error: string };
+
+/**
+ * Las reglas del juego se rompen seguido y no es un bug: la jugada llegó tarde,
+ * no era tu turno, la palabra no existe. Eso vuelve como `{ error }` y la
+ * pantalla lo dice. Lo demás sí explota.
+ */
+async function conReglas(fn: () => Promise<NochePublica>): Promise<RespuestaNoche> {
+  try {
+    return { noche: await fn() };
+  } catch (e) {
+    if (e instanceof ErrorDeJuego) return { error: e.message };
+    if (e instanceof Error && /ya no (existe|está)|No se pudo/.test(e.message)) return { error: e.message };
+    throw e;
+  }
+}
+
+/** Los dos de la sesión, en el orden en que entraron: primero quien la abrió. */
+function jugadoresDe(noche: { creadaPor: string; estado: { presentes?: string[] } }): [string, string] {
+  const otro = (noche.estado.presentes ?? []).find((p) => p !== noche.creadaPor);
+  if (!otro) throw new ErrorDeJuego('Todavía falta que entre el otro.');
+  return [noche.creadaPor, otro];
+}
+
+async function exigirPareja() {
+  const perfil = await exigirPerfil();
+  if (esDemo) throw new ErrorDeJuego('La sesión de a dos necesita Supabase: en la demo no hay Realtime.');
+  if (!perfil.companero) throw new ErrorDeJuego('Para jugar de a dos, primero invitá a la otra persona.');
+  return perfil;
+}
+
+/** Modo individual: la app sortea una pendiente. No deja rastro hasta que se confirma. */
+export async function accionElegirAlAzar(filtros: FiltrosNoche): Promise<{ entradaId: string } | { error: string }> {
+  const perfil = await exigirPerfil();
+  const candidatas = filtrarPendientes(await listarPendientes(perfil.id), filtrosValidos(filtros));
+  if (candidatas.length === 0) return { error: 'No queda ninguna con esos filtros.' };
+  return { entradaId: elegirUno(candidatas, azarSeguro()).id };
+}
+
+/** «Que sea esta»: queda como la de esta noche y se anota en el historial. */
+export async function accionMarcarElegida(entradaId: string) {
+  const perfil = await exigirPerfil();
+  await registrarEleccionIndividual(perfil.id, perfil.espacioId, entradaId);
+  refrescar('/pendientes/noche');
+}
+
+export async function accionSoltarElegida() {
+  const perfil = await exigirPerfil();
+  await marcarElegida(perfil.id, perfil.espacioId, null);
+  refrescar('/pendientes/noche');
+}
+
+export async function accionCrearNoche(): Promise<RespuestaNoche> {
+  return conReglas(async () => {
+    const perfil = await exigirPareja();
+    const noche = await crearNoche(perfil.id, perfil.espacioId);
+    refrescar('/pendientes/noche');
+    return noche;
+  });
+}
+
+export async function accionLeerNoche(id: string): Promise<NochePublica | null> {
+  const perfil = await exigirPerfil();
+  return buscarNoche(perfil.id, id);
+}
+
+/** El segundo celular entra: la sesión pasa a pedir candidatas. */
+export async function accionUnirseANoche(id: string): Promise<RespuestaNoche> {
+  return conReglas(async () => {
+    const perfil = await exigirPareja();
+    return transicionarNoche(perfil.id, id, (noche) => {
+      const presentes = noche.estado.presentes ?? [];
+      if (presentes.includes(perfil.id)) return { cambios: {} };
+      if (noche.fase !== 'esperando') throw new ErrorDeJuego('Esa sesión ya arrancó sin vos.');
+      return {
+        cambios: { fase: 'candidatas', estado: { ...noche.estado, presentes: [...presentes, perfil.id] } },
+      };
+    });
+  });
+}
+
+/**
+ * Cada uno propone la suya: una de la lista o al azar. Con las dos puestas, si
+ * coinciden ya está; si no, hay que jugar.
+ */
+export async function accionProponerCandidata(
+  id: string,
+  eleccion: { como: 'elijo'; entradaId: string } | { como: 'azar'; filtros?: FiltrosNoche },
+): Promise<RespuestaNoche> {
+  return conReglas(async () => {
+    const perfil = await exigirPareja();
+    // Antes de la transacción: en la demo hay una sola conexión y una query
+    // adentro de otra se traba.
+    const pendientes = await listarPendientes(perfil.id);
+
+    return transicionarNoche(perfil.id, id, (noche) => {
+      if (noche.fase !== 'candidatas') throw new ErrorDeJuego('Ahora no es momento de proponer.');
+      const jugadores = jugadoresDe(noche);
+      const candidatas = { ...(noche.estado.candidatas ?? {}) };
+
+      let mia: Candidata;
+      if (eleccion.como === 'elijo') {
+        if (!pendientes.some((p) => p.id === eleccion.entradaId)) {
+          throw new ErrorDeJuego('Esa película no está en pendientes.');
+        }
+        mia = { entradaId: eleccion.entradaId, como: 'elijo' };
+      } else {
+        const posibles = filtrarPendientes(pendientes, filtrosValidos(eleccion.filtros));
+        if (posibles.length === 0) throw new ErrorDeJuego('No queda ninguna con esos filtros.');
+        mia = { entradaId: elegirUno(posibles, azarSeguro()).id, como: 'azar' };
+      }
+      candidatas[perfil.id] = mia;
+
+      const otro = elOtro(jugadores, perfil.id);
+      const suya = candidatas[otro];
+      if (!suya) return { cambios: { estado: { ...noche.estado, candidatas } } };
+
+      if (suya.entradaId === mia.entradaId) {
+        return {
+          cambios: { fase: 'terminada', ganadorId: null, entradaId: mia.entradaId, estado: { ...noche.estado, candidatas } },
+          elegida: mia.entradaId,
+        };
+      }
+      return { cambios: { fase: 'juego', estado: { ...noche.estado, candidatas } } };
+    }).then((noche) => {
+      if (noche.fase === 'terminada') refrescar('/pendientes/noche');
+      return noche;
+    });
+  });
+}
+
+/** Con qué se define. El primero que toca elige; empieza el otro. */
+export async function accionElegirJuego(id: string, juego: Juego): Promise<RespuestaNoche> {
+  return conReglas(async () => {
+    const perfil = await exigirPareja();
+    if (!JUEGOS.includes(juego)) throw new ErrorDeJuego('Ese juego no existe.');
+    const { fichas, titulos } = await fichasParaJuegos(perfil.id);
+
+    return transicionarNoche(perfil.id, id, (noche) => {
+      if (noche.fase !== 'juego') throw new ErrorDeJuego('Ya se eligió el juego.');
+      const jugadores = jugadoresDe(noche);
+      const inicio = iniciarPartida(
+        juego,
+        { jugadores, empieza: elOtro(jugadores, perfil.id), fichas, titulos },
+        azarSeguro(),
+      );
+      const estado = { ...noche.estado, partida: inicio.partida };
+      if (inicio.fin) {
+        const entradaId = noche.estado.candidatas?.[inicio.fin.ganadorId]?.entradaId;
+        return {
+          cambios: { fase: 'terminada', juego, estado, secreto: {}, ganadorId: inicio.fin.ganadorId, entradaId },
+          elegida: entradaId,
+        };
+      }
+      return { cambios: { fase: 'jugando', juego, estado, secreto: inicio.secreto } };
+    }).then((noche) => {
+      if (noche.fase === 'terminada') refrescar('/pendientes/noche');
+      return noche;
+    });
+  });
+}
+
+export async function accionJugar(id: string, jugada: JugadaDeJuego): Promise<RespuestaNoche> {
+  return conReglas(async () => {
+    const perfil = await exigirPareja();
+    if (!esJugadaValida(jugada)) throw new ErrorDeJuego('Esa jugada no tiene forma de jugada.');
+
+    return transicionarNoche(perfil.id, id, (noche): Transicion => {
+      if (noche.fase !== 'jugando' || !noche.estado.partida) throw new ErrorDeJuego('No hay partida en curso.');
+      const jugadores = jugadoresDe(noche);
+      const r = aplicarJugada(noche.estado.partida, noche.secreto, perfil.id, jugada, jugadores);
+
+      if (!r.fin) {
+        return { cambios: { estado: { ...noche.estado, partida: r.partida }, secreto: r.secreto } };
+      }
+      const empate = r.fin.ganadorId === null;
+      const ganadorId = r.fin.ganadorId ?? desempatar(jugadores, azarSeguro());
+      const entradaId = noche.estado.candidatas?.[ganadorId]?.entradaId;
+      return {
+        cambios: {
+          fase: 'terminada',
+          ganadorId,
+          entradaId,
+          secreto: {},
+          estado: {
+            ...noche.estado,
+            partida: r.partida,
+            ...(empate ? { desempate: { resultado: ganadorId } } : {}),
+          },
+        },
+        elegida: entradaId,
+      };
+    }).then((noche) => {
+      if (noche.fase === 'terminada') refrescar('/pendientes/noche');
+      return noche;
+    });
+  });
+}
+
+export async function accionCancelarNoche(id: string): Promise<RespuestaNoche> {
+  return conReglas(async () => {
+    const perfil = await exigirPareja();
+    const noche = await transicionarNoche(perfil.id, id, (noche) => {
+      if (!estaViva(noche.fase)) return { cambios: {} };
+      return { cambios: { fase: 'cancelada', secreto: {}, estado: { ...noche.estado, cerradaPor: perfil.id } } };
+    });
+    refrescar('/pendientes/noche');
+    return noche;
+  });
 }

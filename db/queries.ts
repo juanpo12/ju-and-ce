@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import { and, asc, count, desc, eq, getViewSelectedFields, gt, gte, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, getViewSelectedFields, gt, gte, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import {
   comoUsuario,
@@ -8,17 +8,21 @@ import {
   entradas,
   espacios,
   invitaciones,
+  noches,
   peliculas,
   perfiles,
   puntajes,
   vEntradasPuntuadas,
   vPorGenero,
   type EntradaPuntuada,
+  type Noche,
   type Perfil,
   type Tipo,
 } from './index';
 import { createHash, randomBytes } from 'node:crypto';
 import { hoyISO, ZONA_LIBRETA } from '@/lib/fechas';
+import { FASES_VIVAS, type Carta, type Juego, type NochePublica } from '@/lib/noche';
+import type { TituloParaAhorcar } from '@/lib/juegos/ahorcado';
 
 /* ---------------------------------------------------------------------------
    Todo el acceso a datos vive acá, no disperso entre componentes.
@@ -152,12 +156,14 @@ export async function listarPendientes(userId: string) {
       .select({
         id: vEntradasPuntuadas.id,
         tmdbId: vEntradasPuntuadas.tmdbId,
+        tipo: vEntradasPuntuadas.tipo,
         titulo: vEntradasPuntuadas.titulo,
         anio: vEntradasPuntuadas.anio,
         duracionMin: vEntradasPuntuadas.duracionMin,
         generos: vEntradasPuntuadas.generos,
         posterPath: vEntradasPuntuadas.posterPath,
         creadaEn: vEntradasPuntuadas.creadaEn,
+        elegidaEn: vEntradasPuntuadas.elegidaEn,
         agregadaPor: vEntradasPuntuadas.agregadaPor,
         agregadaPorNombre: perfiles.nombre,
         agregadaPorColor: perfiles.color,
@@ -362,7 +368,8 @@ export async function marcarComoVista(
   return comoUsuario(userId, (tx) =>
     tx
       .update(entradas)
-      .set({ estado: 'vista', vistaEl: datos.vistaEl ?? hoy(), lugar: datos.lugar || null })
+      // Si era «la de esta noche», ya no espera a nadie.
+      .set({ estado: 'vista', vistaEl: datos.vistaEl ?? hoy(), lugar: datos.lugar || null, elegidaEn: null })
       .where(eq(entradas.id, entradaId)),
   );
 }
@@ -505,6 +512,259 @@ export async function sumarAlEspacio(userId: string, espacioId: string, nombre: 
     color: otro?.color === 'menta' ? 'durazno' : 'menta',
   });
 }
+
+/* ------------------------------ noche de peli ---------------------------- */
+
+type Tx = Parameters<Parameters<typeof comoUsuario>[1]>[0];
+
+/** Una sesión abandonada no bloquea la siguiente: a las 6 horas se da por cerrada. */
+const HORAS_DE_VIDA = 6;
+const vencida = () => new Date(Date.now() - HORAS_DE_VIDA * 3_600_000);
+
+/** La fila sin el secreto: lo único que sale al navegador. */
+export function publica(noche: Noche): NochePublica {
+  const { secreto: _secreto, ...resto } = noche;
+  return resto;
+}
+
+/**
+ * Marca una pendiente como «la de esta noche» (o ninguna, con null). Primero
+ * suelta la que hubiera: el índice único no deja dos por espacio.
+ */
+async function marcarElegidaEn(tx: Tx, espacioId: string, entradaId: string | null) {
+  await tx
+    .update(entradas)
+    .set({ elegidaEn: null })
+    .where(and(eq(entradas.espacioId, espacioId), isNotNull(entradas.elegidaEn)));
+  if (entradaId) {
+    const filas = await tx
+      .update(entradas)
+      .set({ elegidaEn: new Date() })
+      .where(and(eq(entradas.id, entradaId), eq(entradas.estado, 'pendiente')))
+      .returning({ id: entradas.id });
+    if (filas.length === 0) throw new Error('Esa película ya no está en pendientes');
+  }
+}
+
+export async function marcarElegida(userId: string, espacioId: string, entradaId: string | null) {
+  return comoUsuario(userId, (tx) => marcarElegidaEn(tx, espacioId, entradaId));
+}
+
+/**
+ * El modo individual no tiene sesión: el sorteo es local y acá queda solo el
+ * resultado, como una noche ya terminada, para que Resumen la cuente.
+ */
+export async function registrarEleccionIndividual(userId: string, espacioId: string, entradaId: string) {
+  return comoUsuario(userId, async (tx) => {
+    await marcarElegidaEn(tx, espacioId, entradaId);
+    await tx.insert(noches).values({
+      espacioId,
+      modo: 'individual',
+      fase: 'terminada',
+      juego: null,
+      creadaPor: userId,
+      entradaId,
+      terminadaEn: new Date(),
+    });
+  });
+}
+
+/** La sesión viva del espacio, si hay una y no está vencida. */
+export async function nocheActiva(userId: string): Promise<NochePublica | null> {
+  return comoUsuario(userId, async (tx) => {
+    const [fila] = await tx
+      .select()
+      .from(noches)
+      .where(and(inArray(noches.fase, FASES_VIVAS), gt(noches.creadaEn, vencida())));
+    return fila ? publica(fila) : null;
+  });
+}
+
+/**
+ * Lo que la pantalla de la noche tiene que mostrar: la sesión viva, o la que
+ * recién terminó mientras su elegida siga esperando arriba de Pendientes (así
+ * un reload no borra el festejo), o una cancelada hace un momento (para que
+ * el otro celular, si recarga, igual vea quién cerró).
+ */
+export async function nocheReciente(userId: string): Promise<NochePublica | null> {
+  const viva = await nocheActiva(userId);
+  if (viva) return viva;
+
+  return comoUsuario(userId, async (tx) => {
+    const [ultima] = await tx
+      .select({ noche: noches, elegidaEn: entradas.elegidaEn })
+      .from(noches)
+      .leftJoin(entradas, eq(entradas.id, noches.entradaId))
+      .where(and(eq(noches.modo, 'duo'), inArray(noches.fase, ['terminada', 'cancelada'])))
+      .orderBy(desc(noches.actualizadaEn))
+      .limit(1);
+    if (!ultima) return null;
+
+    const haceUnRato = Date.now() - ultima.noche.actualizadaEn.getTime() < 2 * 60_000;
+    if (ultima.noche.fase === 'cancelada') return haceUnRato ? publica(ultima.noche) : null;
+    // Terminada: mientras su elegida siga esperando. Soltarla es «elegir otra».
+    return ultima.elegidaEn !== null ? publica(ultima.noche) : null;
+  });
+}
+
+export async function buscarNoche(userId: string, id: string): Promise<NochePublica | null> {
+  return comoUsuario(userId, async (tx) => {
+    const [fila] = await tx.select().from(noches).where(eq(noches.id, id));
+    return fila ? publica(fila) : null;
+  });
+}
+
+/**
+ * Abre una sesión, o devuelve la que ya estaba abierta. Si los dos tocan «De a
+ * dos» al mismo tiempo, el índice parcial hace chocar al segundo y los dos
+ * terminan en la misma fila.
+ */
+export async function crearNoche(userId: string, espacioId: string): Promise<NochePublica> {
+  return comoUsuario(userId, async (tx) => {
+    await tx
+      .update(noches)
+      .set({ fase: 'cancelada', actualizadaEn: new Date() })
+      .where(and(inArray(noches.fase, FASES_VIVAS), lt(noches.creadaEn, vencida())));
+
+    const [nueva] = await tx
+      .insert(noches)
+      .values({
+        espacioId,
+        modo: 'duo',
+        fase: 'esperando',
+        creadaPor: userId,
+        estado: { presentes: [userId], candidatas: {} },
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (nueva) return publica(nueva);
+
+    const [activa] = await tx.select().from(noches).where(inArray(noches.fase, FASES_VIVAS));
+    if (!activa) throw new Error('No se pudo abrir la sesión');
+    return publica(activa);
+  });
+}
+
+export type Transicion = {
+  cambios: Partial<Pick<Noche, 'fase' | 'juego' | 'estado' | 'secreto' | 'ganadorId' | 'entradaId'>>;
+  /** Si la noche termina, con qué entrada. Marca «la de esta noche» en la misma transacción. */
+  elegida?: string;
+};
+
+/**
+ * Toda transición de una sesión pasa por acá: lee la fila bloqueada
+ * (`for update`), aplica la regla y escribe subiendo `version`. Dos jugadas
+ * que llegan a la vez se serializan, y la segunda ve el estado que dejó la
+ * primera en vez de pisarlo.
+ */
+export async function transicionarNoche(
+  userId: string,
+  id: string,
+  regla: (noche: Noche) => Transicion | Promise<Transicion>,
+): Promise<NochePublica> {
+  return comoUsuario(userId, async (tx) => {
+    const [actual] = await tx.select().from(noches).where(eq(noches.id, id)).for('update');
+    if (!actual) throw new Error('Esa sesión ya no existe');
+
+    const { cambios, elegida } = await regla(actual);
+    const termina = cambios.fase === 'terminada';
+
+    const [nueva] = await tx
+      .update(noches)
+      .set({
+        ...cambios,
+        version: actual.version + 1,
+        actualizadaEn: new Date(),
+        ...(termina ? { terminadaEn: new Date() } : {}),
+      })
+      .where(eq(noches.id, id))
+      .returning();
+
+    if (termina && elegida) await marcarElegidaEn(tx, actual.espacioId, elegida);
+    return publica(nueva!);
+  });
+}
+
+/** Las pelis vistas, con lo que los juegos necesitan: cartas y títulos. */
+export async function fichasParaJuegos(userId: string): Promise<{ fichas: Carta[]; titulos: TituloParaAhorcar[] }> {
+  return comoUsuario(userId, async (tx) => {
+    const filas = await tx
+      .select({
+        entradaId: vEntradasPuntuadas.id,
+        titulo: vEntradasPuntuadas.titulo,
+        anio: vEntradasPuntuadas.anio,
+        posterPath: vEntradasPuntuadas.posterPath,
+        generos: vEntradasPuntuadas.generos,
+      })
+      .from(vEntradasPuntuadas)
+      .where(eq(vEntradasPuntuadas.estado, 'vista'));
+    return {
+      fichas: filas.map(({ generos: _g, ...f }) => f),
+      titulos: filas.map((f) => ({ titulo: f.titulo, anio: f.anio, genero: f.generos[0] ?? null })),
+    };
+  });
+}
+
+export type TallyNoches = {
+  total: number;
+  coincidieron: number;
+  alAzar: number;
+  porPersona: Record<string, number>;
+  porJuego: Partial<Record<Juego, number>>;
+};
+
+/** Cuántas noches hubo y quién ganó cuántas, para Resumen. */
+export async function tallyNoches(userId: string): Promise<TallyNoches> {
+  return comoUsuario(userId, async (tx) => {
+    const filas = await tx
+      .select({
+        modo: noches.modo,
+        juego: noches.juego,
+        ganadorId: noches.ganadorId,
+        cantidad: sql<number>`count(*)::int`,
+      })
+      .from(noches)
+      .where(eq(noches.fase, 'terminada'))
+      .groupBy(noches.modo, noches.juego, noches.ganadorId);
+
+    const tally: TallyNoches = { total: 0, coincidieron: 0, alAzar: 0, porPersona: {}, porJuego: {} };
+    for (const f of filas) {
+      tally.total += f.cantidad;
+      if (f.modo === 'individual') tally.alAzar += f.cantidad;
+      else if (!f.ganadorId) tally.coincidieron += f.cantidad;
+      else tally.porPersona[f.ganadorId] = (tally.porPersona[f.ganadorId] ?? 0) + f.cantidad;
+      if (f.juego) tally.porJuego[f.juego] = (tally.porJuego[f.juego] ?? 0) + f.cantidad;
+    }
+    return tally;
+  });
+}
+
+/** Las últimas noches, con el título y quién ganó. */
+export async function historialDeNoches(userId: string, limite = 6) {
+  return comoUsuario(userId, (tx) =>
+    tx
+      .select({
+        id: noches.id,
+        modo: noches.modo,
+        juego: noches.juego,
+        ganadorId: noches.ganadorId,
+        ganadorNombre: perfiles.nombre,
+        entradaId: noches.entradaId,
+        titulo: vEntradasPuntuadas.titulo,
+        posterPath: vEntradasPuntuadas.posterPath,
+        anio: vEntradasPuntuadas.anio,
+        terminadaEn: noches.terminadaEn,
+      })
+      .from(noches)
+      .leftJoin(perfiles, eq(perfiles.id, noches.ganadorId))
+      .leftJoin(vEntradasPuntuadas, eq(vEntradasPuntuadas.id, noches.entradaId))
+      .where(eq(noches.fase, 'terminada'))
+      .orderBy(desc(noches.terminadaEn))
+      .limit(limite),
+  );
+}
+
+export type NocheDelHistorial = Awaited<ReturnType<typeof historialDeNoches>>[number];
 
 function hoy() {
   return hoyISO(ZONA_LIBRETA);

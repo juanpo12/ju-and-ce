@@ -14,7 +14,16 @@ import { cn } from '@/lib/utils';
  * con un anillo que se expande. Son 450 ms que corren mientras el servidor
  * guarda, así que no agregan espera.
  */
-export function BotonYaLaVimos({ entradaId, titulo }: { entradaId: string; titulo: string }) {
+export function BotonYaLaVimos({
+  entradaId,
+  titulo,
+  invertido = false,
+}: {
+  entradaId: string;
+  titulo: string;
+  /** Sobre un fondo de color (la de esta noche): el botón se pinta al revés. */
+  invertido?: boolean;
+}) {
   const router = useRouter();
   const [pendiente, empezar] = useTransition();
   const [hecho, setHecho] = useState(false);
@@ -37,7 +46,8 @@ export function BotonYaLaVimos({ entradaId, titulo }: { entradaId: string; titul
       whileTap={{ scale: 0.94 }}
       transition={{ type: 'spring', bounce: 0.3, duration: 0.35 }}
       className={cn(
-        'foco relative inline-flex h-10 items-center justify-center gap-1.5 overflow-visible rounded-full bg-acento text-sm font-semibold text-sobre-acento shadow-baja transition-[filter] hover:brightness-110',
+        'foco relative inline-flex h-10 items-center justify-center gap-1.5 overflow-visible rounded-full text-sm font-semibold shadow-baja transition-[filter] hover:brightness-110',
+        invertido ? 'bg-superficie text-tinta' : 'bg-acento text-sobre-acento',
         hecho ? 'w-10' : 'px-4',
       )}
     >
@@ -52,7 +62,7 @@ export function BotonYaLaVimos({ entradaId, titulo }: { entradaId: string; titul
           >
             <motion.span
               aria-hidden
-              className="absolute -inset-3 rounded-full border-2 border-acento"
+              className={cn('absolute -inset-3 rounded-full border-2', invertido ? 'border-current' : 'border-acento')}
               initial={{ scale: 0.5, opacity: 0.9 }}
               animate={{ scale: 1.6, opacity: 0 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}

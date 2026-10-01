@@ -72,7 +72,18 @@ await pg.exec(`
     (976893, 'Perfect Days', 'Perfect Days', 2023, 124, 'Wim Wenders',
       '{"Drama"}', 'Un hombre limpia baños públicos en Tokio y encuentra belleza en la rutina.'),
     (915935, 'Anatomía de una caída', 'Anatomie d''une chute', 2023, 151, 'Justine Triet',
-      '{"Drama","Thriller","Policial"}', 'Una escritora es juzgada por la muerte de su marido.');
+      '{"Drama","Thriller","Policial"}', 'Una escritora es juzgada por la muerte de su marido.'),
+    (438631, 'Duna', 'Dune', 2021, 155, 'Denis Villeneuve',
+      '{"Ciencia ficción","Aventura"}', 'Paul Atreides llega a Arrakis, el planeta de la especia.'),
+    (872585, 'Oppenheimer', 'Oppenheimer', 2023, 181, 'Christopher Nolan',
+      '{"Drama","Historia"}', 'El físico que dirigió el proyecto de la bomba atómica.'),
+    (792307, 'Pobres criaturas', 'Poor Things', 2023, 141, 'Yorgos Lanthimos',
+      '{"Ciencia ficción","Comedia","Romance"}', 'Bella Baxter sale a conocer el mundo con una curiosidad sin filtro.');
+
+  -- Una serie: TMDB la numera aparte, por eso lleva su tipo.
+  insert into peliculas (tmdb_id, tipo, titulo, titulo_original, anio, duracion_min, director, generos, sinopsis) values
+    (136315, 'serie', 'The Bear', 'The Bear', 2022, 30, 'Christopher Storer',
+      '{"Comedia","Drama"}', 'Un chef de alta cocina vuelve a Chicago a hacerse cargo del local de sándwiches de su familia.');
 
   insert into entradas (id, espacio_id, tmdb_id, estado, vista_el, lugar, agregada_por) values
     ('11111111-0000-4000-8000-000000000001'::uuid, '${ESPACIO}'::uuid, 157336, 'vista', '2026-09-14', 'el sillón',    '${PERFIL_DEMO}'::uuid),
@@ -82,7 +93,18 @@ await pg.exec(`
     ('11111111-0000-4000-8000-000000000005'::uuid, '${ESPACIO}'::uuid, 313369, 'vista', '2026-06-05', 'el sillón',    '${PERFIL_DEMO}'::uuid),
     ('11111111-0000-4000-8000-000000000006'::uuid, '${ESPACIO}'::uuid, 614934, 'vista', '2026-05-18', 'el cine',      '${CECI}'::uuid),
     ('11111111-0000-4000-8000-000000000007'::uuid, '${ESPACIO}'::uuid, 976893, 'pendiente', null, null,               '${CECI}'::uuid),
-    ('11111111-0000-4000-8000-000000000008'::uuid, '${ESPACIO}'::uuid, 915935, 'pendiente', null, null,               '${PERFIL_DEMO}'::uuid);
+    ('11111111-0000-4000-8000-000000000008'::uuid, '${ESPACIO}'::uuid, 915935, 'pendiente', null, null,               '${PERFIL_DEMO}'::uuid),
+    ('11111111-0000-4000-8000-000000000009'::uuid, '${ESPACIO}'::uuid, 438631, 'pendiente', null, null,               '${CECI}'::uuid),
+    ('11111111-0000-4000-8000-000000000010'::uuid, '${ESPACIO}'::uuid, 872585, 'pendiente', null, null,               '${PERFIL_DEMO}'::uuid),
+    ('11111111-0000-4000-8000-000000000011'::uuid, '${ESPACIO}'::uuid, 792307, 'pendiente', null, null,               '${CECI}'::uuid);
+
+  insert into entradas (id, espacio_id, tmdb_id, tipo, estado, agregada_por) values
+    ('11111111-0000-4000-8000-000000000012'::uuid, '${ESPACIO}'::uuid, 136315, 'serie', 'pendiente', '${PERFIL_DEMO}'::uuid);
+
+  -- Dos noches ya jugadas, para que Resumen tenga algo que contar.
+  insert into noches (espacio_id, modo, fase, juego, creada_por, ganador_id, entrada_id, terminada_en, actualizada_en) values
+    ('${ESPACIO}'::uuid, 'duo', 'terminada', 'ppt',      '${PERFIL_DEMO}'::uuid, '${CECI}'::uuid,        '11111111-0000-4000-8000-000000000003'::uuid, now() - interval '20 days', now() - interval '20 days'),
+    ('${ESPACIO}'::uuid, 'duo', 'terminada', 'ahorcado', '${CECI}'::uuid,        '${PERFIL_DEMO}'::uuid, '11111111-0000-4000-8000-000000000005'::uuid, now() - interval '9 days',  now() - interval '9 days');
 
   insert into puntajes (entrada_id, perfil_id, estrellas, comentario) values
     ('11111111-0000-4000-8000-000000000001'::uuid, '${PERFIL_DEMO}'::uuid, 5,   'La mejor que vimos este año. El final me dejó hecho pelota.'),
