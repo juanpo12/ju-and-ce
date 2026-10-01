@@ -106,7 +106,7 @@ function PosterInventado({
         />
         <span
           aria-hidden
-          className="relative line-clamp-4 pt-[0.15em] font-cartel text-[calc(17cqw*var(--cartel-escala))] uppercase leading-[0.9] tracking-wide [text-wrap:balance]"
+          className="relative line-clamp-4 pt-[0.15em] font-cartel text-[calc(17cqw*var(--cartel-escala))] leading-[0.9] [text-transform:var(--cartel-mayusculas)] tracking-wide [text-wrap:balance]"
         >
           {titulo}
         </span>
