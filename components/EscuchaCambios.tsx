@@ -83,8 +83,8 @@ export function EscuchaCambios({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'puntajes' }, (p) =>
         avisar(p as unknown as Cambio),
       )
-      // Solo el alta de una noche de peli: el banner de Pendientes. Las jugadas
-      // (updates) las sigue la pantalla de la sesión por su propio canal.
+      // Only the creation of a movie night: the banner on Pendientes. Moves
+      // (updates) are followed by the session screen on its own channel.
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'noches', filter: `espacio_id=eq.${espacioId}` },

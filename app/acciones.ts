@@ -12,12 +12,12 @@ import type { Tipo } from '@/db/schema';
 import {
   borrarEntrada,
   borrarPuntaje,
-  buscarNoche,
   crearEntrada,
   crearInvitacion,
-  crearNoche,
+  createNight,
   editarEntrada,
-  fichasParaJuegos,
+  findNight,
+  gameAssets,
   guardarAjustes,
   guardarFicha,
   guardarPuntaje,
@@ -25,33 +25,27 @@ import {
   liberarInvitacion,
   listarPendientes,
   marcarComoVista,
-  marcarElegida,
-  registrarEleccionIndividual,
+  recordSoloPick,
   reservarInvitacion,
+  setPicked,
   sumarAlEspacio,
-  transicionarNoche,
-  type Transicion,
+  transitionNight,
+  type Transition,
 } from '@/db/queries';
 import {
-  elOtro,
-  estaViva,
-  filtrarPendientes,
-  filtrosValidos,
-  type Candidata,
-  type FiltrosNoche,
-  type Juego,
-  type JugadaDeJuego,
-  type NochePublica,
-} from '@/lib/noche';
-import { JUEGOS } from '@/lib/noche';
-import { azarSeguro, elegirUno } from '@/lib/juegos/azar';
-import {
-  aplicarJugada,
-  desempatar,
-  esJugadaValida,
-  ErrorDeJuego,
-  iniciarPartida,
-} from '@/lib/juegos/indice';
+  GAMES,
+  filterPending,
+  isLive,
+  otherOf,
+  validFilters,
+  type Candidate,
+  type DrawFilters,
+  type Game,
+  type Move,
+  type PublicNight,
+} from '@/lib/movie-night';
+import { pickOne, secureRng } from '@/lib/games/random';
+import { applyMove, GameError, isValidMove, startMatch, tiebreak } from '@/lib/games';
 
 /**
  * Las mutaciones. Todas pasan por `exigirPerfil()` y de ahí a `comoUsuario()`,
@@ -216,215 +210,215 @@ export async function accionSalir() {
   redirect('/entrar');
 }
 
-/* ------------------------------ noche de peli ---------------------------- */
+/* ------------------------------- movie night ----------------------------- */
 
-export type RespuestaNoche = { noche: NochePublica } | { error: string };
+export type NightResponse = { night: PublicNight } | { error: string };
 
 /**
- * Las reglas del juego se rompen seguido y no es un bug: la jugada llegó tarde,
- * no era tu turno, la palabra no existe. Eso vuelve como `{ error }` y la
- * pantalla lo dice. Lo demás sí explota.
+ * Game rules get broken all the time and it is not a bug: the move arrived
+ * late, it was not your turn, the word does not exist. That comes back as
+ * `{ error }` and the screen says so. Everything else does blow up.
  */
-async function conReglas(fn: () => Promise<NochePublica>): Promise<RespuestaNoche> {
+async function withRules(fn: () => Promise<PublicNight>): Promise<NightResponse> {
   try {
-    return { noche: await fn() };
+    return { night: await fn() };
   } catch (e) {
-    if (e instanceof ErrorDeJuego) return { error: e.message };
+    if (e instanceof GameError) return { error: e.message };
     if (e instanceof Error && /ya no (existe|está)|No se pudo/.test(e.message)) return { error: e.message };
     throw e;
   }
 }
 
-/** Los dos de la sesión, en el orden en que entraron: primero quien la abrió. */
-function jugadoresDe(noche: { creadaPor: string; estado: { presentes?: string[] } }): [string, string] {
-  const otro = (noche.estado.presentes ?? []).find((p) => p !== noche.creadaPor);
-  if (!otro) throw new ErrorDeJuego('Todavía falta que entre el otro.');
-  return [noche.creadaPor, otro];
+/** The two of the session, in the order they entered: whoever opened it first. */
+function playersOf(night: { createdBy: string; state: { present?: string[] } }): [string, string] {
+  const other = (night.state.present ?? []).find((p) => p !== night.createdBy);
+  if (!other) throw new GameError('Todavía falta que entre el otro.');
+  return [night.createdBy, other];
 }
 
-async function exigirPareja() {
+async function requirePartner() {
   const perfil = await exigirPerfil();
-  if (esDemo) throw new ErrorDeJuego('La sesión de a dos necesita Supabase: en la demo no hay Realtime.');
-  if (!perfil.companero) throw new ErrorDeJuego('Para jugar de a dos, primero invitá a la otra persona.');
+  if (esDemo) throw new GameError('La sesión de a dos necesita Supabase: en la demo no hay Realtime.');
+  if (!perfil.companero) throw new GameError('Para jugar de a dos, primero invitá a la otra persona.');
   return perfil;
 }
 
-/** Modo individual: la app sortea una pendiente. No deja rastro hasta que se confirma. */
-export async function accionElegirAlAzar(filtros: FiltrosNoche): Promise<{ entradaId: string } | { error: string }> {
+/** Solo mode: the app draws a pending entry. Leaves no trace until confirmed. */
+export async function pickRandomAction(filters: DrawFilters): Promise<{ entryId: string } | { error: string }> {
   const perfil = await exigirPerfil();
-  const candidatas = filtrarPendientes(await listarPendientes(perfil.id), filtrosValidos(filtros));
-  if (candidatas.length === 0) return { error: 'No queda ninguna con esos filtros.' };
-  return { entradaId: elegirUno(candidatas, azarSeguro()).id };
+  const candidates = filterPending(await listarPendientes(perfil.id), validFilters(filters));
+  if (candidates.length === 0) return { error: 'No queda ninguna con esos filtros.' };
+  return { entryId: pickOne(candidates, secureRng()).id };
 }
 
-/** «Que sea esta»: queda como la de esta noche y se anota en el historial. */
-export async function accionMarcarElegida(entradaId: string) {
+/** "Que sea esta": it becomes tonight's pick and goes into the history. */
+export async function setPickedAction(entryId: string) {
   const perfil = await exigirPerfil();
-  await registrarEleccionIndividual(perfil.id, perfil.espacioId, entradaId);
+  await recordSoloPick(perfil.id, perfil.espacioId, entryId);
   refrescar('/pendientes/noche');
 }
 
-export async function accionSoltarElegida() {
+export async function clearPickedAction() {
   const perfil = await exigirPerfil();
-  await marcarElegida(perfil.id, perfil.espacioId, null);
+  await setPicked(perfil.id, perfil.espacioId, null);
   refrescar('/pendientes/noche');
 }
 
-export async function accionCrearNoche(): Promise<RespuestaNoche> {
-  return conReglas(async () => {
-    const perfil = await exigirPareja();
-    const noche = await crearNoche(perfil.id, perfil.espacioId);
+export async function createNightAction(): Promise<NightResponse> {
+  return withRules(async () => {
+    const perfil = await requirePartner();
+    const night = await createNight(perfil.id, perfil.espacioId);
     refrescar('/pendientes/noche');
-    return noche;
+    return night;
   });
 }
 
-export async function accionLeerNoche(id: string): Promise<NochePublica | null> {
+export async function readNightAction(id: string): Promise<PublicNight | null> {
   const perfil = await exigirPerfil();
-  return buscarNoche(perfil.id, id);
+  return findNight(perfil.id, id);
 }
 
-/** El segundo celular entra: la sesión pasa a pedir candidatas. */
-export async function accionUnirseANoche(id: string): Promise<RespuestaNoche> {
-  return conReglas(async () => {
-    const perfil = await exigirPareja();
-    return transicionarNoche(perfil.id, id, (noche) => {
-      const presentes = noche.estado.presentes ?? [];
-      if (presentes.includes(perfil.id)) return { cambios: {} };
-      if (noche.fase !== 'esperando') throw new ErrorDeJuego('Esa sesión ya arrancó sin vos.');
+/** The second phone comes in: the session moves on to asking for candidates. */
+export async function joinNightAction(id: string): Promise<NightResponse> {
+  return withRules(async () => {
+    const perfil = await requirePartner();
+    return transitionNight(perfil.id, id, (night) => {
+      const present = night.state.present ?? [];
+      if (present.includes(perfil.id)) return { changes: {} };
+      if (night.phase !== 'esperando') throw new GameError('Esa sesión ya arrancó sin vos.');
       return {
-        cambios: { fase: 'candidatas', estado: { ...noche.estado, presentes: [...presentes, perfil.id] } },
+        changes: { phase: 'candidatas', state: { ...night.state, present: [...present, perfil.id] } },
       };
     });
   });
 }
 
 /**
- * Cada uno propone la suya: una de la lista o al azar. Con las dos puestas, si
- * coinciden ya está; si no, hay que jugar.
+ * Each one proposes theirs: one from the list, or at random. With both set, if
+ * they match it is settled; otherwise there is a game to play.
  */
-export async function accionProponerCandidata(
+export async function proposeCandidateAction(
   id: string,
-  eleccion: { como: 'elijo'; entradaId: string } | { como: 'azar'; filtros?: FiltrosNoche },
-): Promise<RespuestaNoche> {
-  return conReglas(async () => {
-    const perfil = await exigirPareja();
-    // Antes de la transacción: en la demo hay una sola conexión y una query
-    // adentro de otra se traba.
-    const pendientes = await listarPendientes(perfil.id);
+  choice: { how: 'picked'; entryId: string } | { how: 'random'; filters?: DrawFilters },
+): Promise<NightResponse> {
+  return withRules(async () => {
+    const perfil = await requirePartner();
+    // Before the transaction: the demo has a single connection and a query
+    // inside another one deadlocks.
+    const pending = await listarPendientes(perfil.id);
 
-    return transicionarNoche(perfil.id, id, (noche) => {
-      if (noche.fase !== 'candidatas') throw new ErrorDeJuego('Ahora no es momento de proponer.');
-      const jugadores = jugadoresDe(noche);
-      const candidatas = { ...(noche.estado.candidatas ?? {}) };
+    return transitionNight(perfil.id, id, (night) => {
+      if (night.phase !== 'candidatas') throw new GameError('Ahora no es momento de proponer.');
+      const players = playersOf(night);
+      const candidates = { ...(night.state.candidates ?? {}) };
 
-      let mia: Candidata;
-      if (eleccion.como === 'elijo') {
-        if (!pendientes.some((p) => p.id === eleccion.entradaId)) {
-          throw new ErrorDeJuego('Esa película no está en pendientes.');
+      let mine: Candidate;
+      if (choice.how === 'picked') {
+        if (!pending.some((p) => p.id === choice.entryId)) {
+          throw new GameError('Esa película no está en pendientes.');
         }
-        mia = { entradaId: eleccion.entradaId, como: 'elijo' };
+        mine = { entryId: choice.entryId, how: 'picked' };
       } else {
-        const posibles = filtrarPendientes(pendientes, filtrosValidos(eleccion.filtros));
-        if (posibles.length === 0) throw new ErrorDeJuego('No queda ninguna con esos filtros.');
-        mia = { entradaId: elegirUno(posibles, azarSeguro()).id, como: 'azar' };
+        const possible = filterPending(pending, validFilters(choice.filters));
+        if (possible.length === 0) throw new GameError('No queda ninguna con esos filtros.');
+        mine = { entryId: pickOne(possible, secureRng()).id, how: 'random' };
       }
-      candidatas[perfil.id] = mia;
+      candidates[perfil.id] = mine;
 
-      const otro = elOtro(jugadores, perfil.id);
-      const suya = candidatas[otro];
-      if (!suya) return { cambios: { estado: { ...noche.estado, candidatas } } };
+      const other = otherOf(players, perfil.id);
+      const theirs = candidates[other];
+      if (!theirs) return { changes: { state: { ...night.state, candidates } } };
 
-      if (suya.entradaId === mia.entradaId) {
+      if (theirs.entryId === mine.entryId) {
         return {
-          cambios: { fase: 'terminada', ganadorId: null, entradaId: mia.entradaId, estado: { ...noche.estado, candidatas } },
-          elegida: mia.entradaId,
+          changes: { phase: 'terminada', winnerId: null, entryId: mine.entryId, state: { ...night.state, candidates } },
+          picked: mine.entryId,
         };
       }
-      return { cambios: { fase: 'juego', estado: { ...noche.estado, candidatas } } };
-    }).then((noche) => {
-      if (noche.fase === 'terminada') refrescar('/pendientes/noche');
-      return noche;
+      return { changes: { phase: 'juego', state: { ...night.state, candidates } } };
+    }).then((night) => {
+      if (night.phase === 'terminada') refrescar('/pendientes/noche');
+      return night;
     });
   });
 }
 
-/** Con qué se define. El primero que toca elige; empieza el otro. */
-export async function accionElegirJuego(id: string, juego: Juego): Promise<RespuestaNoche> {
-  return conReglas(async () => {
-    const perfil = await exigirPareja();
-    if (!JUEGOS.includes(juego)) throw new ErrorDeJuego('Ese juego no existe.');
-    const { fichas, titulos } = await fichasParaJuegos(perfil.id);
+/** What settles it. The first one to tap chooses; the other one starts. */
+export async function chooseGameAction(id: string, game: Game): Promise<NightResponse> {
+  return withRules(async () => {
+    const perfil = await requirePartner();
+    if (!GAMES.includes(game)) throw new GameError('Ese juego no existe.');
+    const { cards, titles } = await gameAssets(perfil.id);
 
-    return transicionarNoche(perfil.id, id, (noche) => {
-      if (noche.fase !== 'juego') throw new ErrorDeJuego('Ya se eligió el juego.');
-      const jugadores = jugadoresDe(noche);
-      const inicio = iniciarPartida(
-        juego,
-        { jugadores, empieza: elOtro(jugadores, perfil.id), fichas, titulos },
-        azarSeguro(),
+    return transitionNight(perfil.id, id, (night) => {
+      if (night.phase !== 'juego') throw new GameError('Ya se eligió el juego.');
+      const players = playersOf(night);
+      const start = startMatch(
+        game,
+        { players, starter: otherOf(players, perfil.id), cards, titles },
+        secureRng(),
       );
-      const estado = { ...noche.estado, partida: inicio.partida };
-      if (inicio.fin) {
-        const entradaId = noche.estado.candidatas?.[inicio.fin.ganadorId]?.entradaId;
+      const state = { ...night.state, match: start.match };
+      if (start.end) {
+        const entryId = night.state.candidates?.[start.end.winnerId]?.entryId;
         return {
-          cambios: { fase: 'terminada', juego, estado, secreto: {}, ganadorId: inicio.fin.ganadorId, entradaId },
-          elegida: entradaId,
+          changes: { phase: 'terminada', game, state, secret: {}, winnerId: start.end.winnerId, entryId },
+          picked: entryId,
         };
       }
-      return { cambios: { fase: 'jugando', juego, estado, secreto: inicio.secreto } };
-    }).then((noche) => {
-      if (noche.fase === 'terminada') refrescar('/pendientes/noche');
-      return noche;
+      return { changes: { phase: 'jugando', game, state, secret: start.secret } };
+    }).then((night) => {
+      if (night.phase === 'terminada') refrescar('/pendientes/noche');
+      return night;
     });
   });
 }
 
-export async function accionJugar(id: string, jugada: JugadaDeJuego): Promise<RespuestaNoche> {
-  return conReglas(async () => {
-    const perfil = await exigirPareja();
-    if (!esJugadaValida(jugada)) throw new ErrorDeJuego('Esa jugada no tiene forma de jugada.');
+export async function playAction(id: string, move: Move): Promise<NightResponse> {
+  return withRules(async () => {
+    const perfil = await requirePartner();
+    if (!isValidMove(move)) throw new GameError('Esa jugada no tiene forma de jugada.');
 
-    return transicionarNoche(perfil.id, id, (noche): Transicion => {
-      if (noche.fase !== 'jugando' || !noche.estado.partida) throw new ErrorDeJuego('No hay partida en curso.');
-      const jugadores = jugadoresDe(noche);
-      const r = aplicarJugada(noche.estado.partida, noche.secreto, perfil.id, jugada, jugadores);
+    return transitionNight(perfil.id, id, (night): Transition => {
+      if (night.phase !== 'jugando' || !night.state.match) throw new GameError('No hay partida en curso.');
+      const players = playersOf(night);
+      const r = applyMove(night.state.match, night.secret, perfil.id, move, players);
 
-      if (!r.fin) {
-        return { cambios: { estado: { ...noche.estado, partida: r.partida }, secreto: r.secreto } };
+      if (!r.end) {
+        return { changes: { state: { ...night.state, match: r.match }, secret: r.secret } };
       }
-      const empate = r.fin.ganadorId === null;
-      const ganadorId = r.fin.ganadorId ?? desempatar(jugadores, azarSeguro());
-      const entradaId = noche.estado.candidatas?.[ganadorId]?.entradaId;
+      const tied = r.end.winnerId === null;
+      const winnerId = r.end.winnerId ?? tiebreak(players, secureRng());
+      const entryId = night.state.candidates?.[winnerId]?.entryId;
       return {
-        cambios: {
-          fase: 'terminada',
-          ganadorId,
-          entradaId,
-          secreto: {},
-          estado: {
-            ...noche.estado,
-            partida: r.partida,
-            ...(empate ? { desempate: { resultado: ganadorId } } : {}),
+        changes: {
+          phase: 'terminada',
+          winnerId,
+          entryId,
+          secret: {},
+          state: {
+            ...night.state,
+            match: r.match,
+            ...(tied ? { tiebreak: { result: winnerId } } : {}),
           },
         },
-        elegida: entradaId,
+        picked: entryId,
       };
-    }).then((noche) => {
-      if (noche.fase === 'terminada') refrescar('/pendientes/noche');
-      return noche;
+    }).then((night) => {
+      if (night.phase === 'terminada') refrescar('/pendientes/noche');
+      return night;
     });
   });
 }
 
-export async function accionCancelarNoche(id: string): Promise<RespuestaNoche> {
-  return conReglas(async () => {
-    const perfil = await exigirPareja();
-    const noche = await transicionarNoche(perfil.id, id, (noche) => {
-      if (!estaViva(noche.fase)) return { cambios: {} };
-      return { cambios: { fase: 'cancelada', secreto: {}, estado: { ...noche.estado, cerradaPor: perfil.id } } };
+export async function cancelNightAction(id: string): Promise<NightResponse> {
+  return withRules(async () => {
+    const perfil = await requirePartner();
+    const night = await transitionNight(perfil.id, id, (night) => {
+      if (!isLive(night.phase)) return { changes: {} };
+      return { changes: { phase: 'cancelada', secret: {}, state: { ...night.state, closedBy: perfil.id } } };
     });
     refrescar('/pendientes/noche');
-    return noche;
+    return night;
   });
 }

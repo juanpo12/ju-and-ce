@@ -18,21 +18,21 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-// Relativo, no `@/`: drizzle-kit carga este archivo con su propio bundler.
-// Las listas viven allá porque el navegador también las necesita, y traer el
-// esquema entero al bundle del cliente por tres constantes sería un despropósito.
+// Relative, not `@/`: drizzle-kit loads this file with its own bundler. The
+// lists live over there because the browser needs them too, and pulling the
+// whole schema into the client bundle for three constants would be absurd.
 import {
-  FASES_NOCHE,
-  JUEGOS,
-  MODOS_NOCHE,
-  type EstadoNoche,
-  type Fase,
-  type Juego,
-  type Modo,
-  type SecretoNoche,
-} from '../lib/noche';
+  GAMES,
+  NIGHT_MODES,
+  NIGHT_PHASES,
+  type Game,
+  type Mode,
+  type NightSecret,
+  type NightState,
+  type Phase,
+} from '../lib/movie-night';
 
-export { FASES_NOCHE, JUEGOS, MODOS_NOCHE };
+export { GAMES, NIGHT_MODES, NIGHT_PHASES };
 import { sql } from 'drizzle-orm';
 import { authenticatedRole, authUsers } from 'drizzle-orm/supabase';
 
@@ -146,13 +146,13 @@ export const entradas = pgTable('entradas', {
     .notNull()
     .references(() => perfiles.id),
   creadaEn: timestamp('creada_en', { withTimezone: true }).notNull().defaultNow(),
-  // «La de esta noche»: la pendiente que salió elegida (al azar o jugando) y
-  // espera arriba de la lista hasta que la marquen vista o la suelten.
-  elegidaEn: timestamp('elegida_en', { withTimezone: true }),
+  // "Tonight's pick": the pending entry that came out (by chance or by
+  // playing) and waits at the top of the list until it is marked watched or let go.
+  pickedAt: timestamp('elegida_en', { withTimezone: true }),
 }, (t) => [
   check('entradas_estado_valido', sql`${t.estado} in ('vista', 'pendiente')`),
-  // A lo sumo una elegida por espacio: lo garantiza la base, no el código.
-  uniqueIndex('entradas_elegida_uq').on(t.espacioId).where(sql`${t.elegidaEn} is not null`),
+  // At most one pick per space: the database guarantees it, not the code.
+  uniqueIndex('entradas_elegida_uq').on(t.espacioId).where(sql`${t.pickedAt} is not null`),
   foreignKey({
     name: 'entradas_ficha_fk',
     columns: [t.tmdbId, t.tipo],
@@ -223,59 +223,59 @@ export type Entrada = typeof entradas.$inferSelect;
 export type Puntaje = typeof puntajes.$inferSelect;
 
 /**
- * Una «noche de peli»: la sesión en la que se elige qué ver. La misma fila es la
- * sesión en vivo (fases `esperando` → `candidatas` → `juego` → `jugando`) y,
- * cuando termina, el historial: quién ganó, con qué juego y qué peli salió.
+ * A "movie night": the session in which the couple picks what to watch. The
+ * same row is the live session (phases `esperando` → `candidatas` → `juego` →
+ * `jugando`) and, once it ends, the history: who won, at which game and which
+ * movie came out.
  *
- * `estado` es lo que ven los dos celulares; `secreto` es lo que el servidor
- * necesita para arbitrar y no conviene mostrar (la jugada del otro antes de
- * revelar, la palabra del Wordle, el título del ahorcado). Realtime igual manda
- * la fila entera: el secreto queda escondido de la pantalla, no de las
- * herramientas del navegador. Para dos personas que se tienen confianza es el
- * mismo umbral que el resto de la app.
+ * `state` is what both phones see; `secret` is what the server needs to referee
+ * and should not be shown (the other one's throw before the reveal, the Wordle
+ * word, the hangman title). Realtime still ships the whole row: the secret is
+ * hidden from the screen, not from the browser's devtools. For two people who
+ * trust each other that is the same bar as the rest of the app.
  *
- * `version` sube en cada transición: el cliente descarta eventos que lleguen
- * fuera de orden.
+ * `version` goes up on every transition: the client drops events that arrive
+ * out of order.
  */
-export const noches = pgTable('noches', {
+export const nights = pgTable('noches', {
   id: uuid('id').primaryKey().defaultRandom(),
-  espacioId: uuid('espacio_id')
+  spaceId: uuid('espacio_id')
     .notNull()
     .references(() => espacios.id, { onDelete: 'cascade' }),
-  modo: text('modo', { enum: MODOS_NOCHE }).$type<Modo>().notNull(),
-  fase: text('fase', { enum: FASES_NOCHE }).$type<Fase>().notNull(),
-  juego: text('juego', { enum: JUEGOS }).$type<Juego>(),
-  creadaPor: uuid('creada_por')
+  mode: text('modo', { enum: NIGHT_MODES }).$type<Mode>().notNull(),
+  phase: text('fase', { enum: NIGHT_PHASES }).$type<Phase>().notNull(),
+  game: text('juego', { enum: GAMES }).$type<Game>(),
+  createdBy: uuid('creada_por')
     .notNull()
     .references(() => perfiles.id, { onDelete: 'cascade' }),
-  // Null con fase `terminada` y modo `duo` = coincidieron sin jugar.
-  ganadorId: uuid('ganador_id').references(() => perfiles.id, { onDelete: 'set null' }),
-  // La elegida. Si después la borran de la libreta, el historial la recuerda
-  // como «una que ya no está».
-  entradaId: uuid('entrada_id').references(() => entradas.id, { onDelete: 'set null' }),
-  estado: jsonb('estado').$type<EstadoNoche>().notNull().default(sql`'{}'::jsonb`),
-  secreto: jsonb('secreto').$type<SecretoNoche>().notNull().default(sql`'{}'::jsonb`),
+  // Null with phase `terminada` and mode `duo` = they agreed without playing.
+  winnerId: uuid('ganador_id').references(() => perfiles.id, { onDelete: 'set null' }),
+  // The pick. If it is later deleted from the library, the history remembers
+  // it as "one that is no longer there".
+  entryId: uuid('entrada_id').references(() => entradas.id, { onDelete: 'set null' }),
+  state: jsonb('estado').$type<NightState>().notNull().default(sql`'{}'::jsonb`),
+  secret: jsonb('secreto').$type<NightSecret>().notNull().default(sql`'{}'::jsonb`),
   version: integer('version').notNull().default(0),
-  creadaEn: timestamp('creada_en', { withTimezone: true }).notNull().defaultNow(),
-  actualizadaEn: timestamp('actualizada_en', { withTimezone: true }).notNull().defaultNow(),
-  terminadaEn: timestamp('terminada_en', { withTimezone: true }),
+  createdAt: timestamp('creada_en', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('actualizada_en', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('terminada_en', { withTimezone: true }),
 }, (t) => [
-  check('noches_modo_valido', sql`${t.modo} in ('individual', 'duo')`),
+  check('noches_modo_valido', sql`${t.mode} in ('individual', 'duo')`),
   check(
     'noches_fase_valida',
-    sql`${t.fase} in ('esperando', 'candidatas', 'juego', 'jugando', 'terminada', 'cancelada')`,
+    sql`${t.phase} in ('esperando', 'candidatas', 'juego', 'jugando', 'terminada', 'cancelada')`,
   ),
   check(
     'noches_juego_valido',
-    sql`${t.juego} is null or ${t.juego} in ('ppt', 'memoria', 'ahorcado', 'wordle', 'moneda')`,
+    sql`${t.game} is null or ${t.game} in ('ppt', 'memoria', 'ahorcado', 'wordle', 'moneda')`,
   ),
-  // Una sesión viva por espacio. Es lo que hace seguro que los dos toquen
-  // «De a dos» al mismo tiempo: el segundo insert choca y se queda con la primera.
+  // One live session per space. This is what makes it safe for both to tap
+  // "De a dos" at the same time: the second insert collides and keeps the first.
   uniqueIndex('noches_activa_uq')
-    .on(t.espacioId)
-    .where(sql`${t.fase} not in ('terminada', 'cancelada')`),
-  index('noches_historial_idx').on(t.espacioId, t.terminadaEn.desc()),
-  // Igual que la libreta: se lee y se escribe solo dentro del propio espacio.
+    .on(t.spaceId)
+    .where(sql`${t.phase} not in ('terminada', 'cancelada')`),
+  index('noches_historial_idx').on(t.spaceId, t.finishedAt.desc()),
+  // Same as the library: read and written only inside one's own space.
   pgPolicy('noches_rw', {
     for: 'all',
     to: authenticatedRole,
@@ -284,7 +284,7 @@ export const noches = pgTable('noches', {
   }),
 ]);
 
-export type Noche = typeof noches.$inferSelect;
+export type Night = typeof nights.$inferSelect;
 
 /**
  * El link con el que la otra persona se suma a la libreta. Se guarda el hash del
@@ -323,7 +323,7 @@ export const vEntradasPuntuadas = pgView('v_entradas_puntuadas', {
   lugar: text('lugar'),
   agregadaPor: uuid('agregada_por').notNull(),
   creadaEn: timestamp('creada_en', { withTimezone: true }).notNull(),
-  elegidaEn: timestamp('elegida_en', { withTimezone: true }),
+  pickedAt: timestamp('elegida_en', { withTimezone: true }),
   titulo: text('titulo').notNull(),
   anio: smallint('anio'),
   duracionMin: smallint('duracion_min'),

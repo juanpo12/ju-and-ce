@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function CargandoNoche() {
+export default function LoadingNight() {
   return (
     <div aria-busy aria-label="Cargando la noche de peli">
       <Skeleton className="mb-2 h-4 w-20" />

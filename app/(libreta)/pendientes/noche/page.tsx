@@ -3,46 +3,46 @@ import { ArrowLeft } from 'lucide-react';
 import { exigirPerfil } from '@/lib/sesion';
 import { personasDe } from '@/lib/personas';
 import { esDemo } from '@/lib/demo';
-import { JUEGOS } from '@/lib/noche';
-import { fichasParaJuegos, listarPendientes, nocheReciente } from '@/db/queries';
-import { porQueNoSePuede } from '@/lib/juegos/indice';
-import type { Juego } from '@/lib/noche';
+import { GAMES, type Game } from '@/lib/movie-night';
+import { gameAssets, listarPendientes, recentNight } from '@/db/queries';
+import { whyUnavailable } from '@/lib/games/index';
 import { Vacio } from '@/components/Vacio';
 import { BotonLink } from '@/components/Boton';
-import { ElegirModo } from './ElegirModo';
-import { EleccionIndividual } from './EleccionIndividual';
-import { SesionNoche } from './SesionNoche';
+import { ChooseMode } from './ChooseMode';
+import { SoloPick } from './SoloPick';
+import { NightSession } from './NightSession';
 
 export const metadata = { title: 'Noche de peli — Nuestra libreta' };
 
 /**
- * Elegir qué ver. Tres pantallas según el caso: si hay una sesión viva, se
- * entra directo; si no, se elige el modo, y el individual es el sorteo.
+ * Choosing what to watch. Three screens depending on the case: with a live
+ * session you go straight in; otherwise you choose the mode, and solo mode is
+ * the random draw.
  */
-export default async function Noche({
+export default async function Night({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const perfil = await exigirPerfil();
-  const { yo, otro } = personasDe(perfil);
+  const { yo: me, otro: other } = personasDe(perfil);
   const { modo } = await searchParams;
 
-  // De a dos hace falta la otra persona y Supabase del otro lado (Realtime).
-  const deADos = Boolean(otro) && !esDemo;
-  const motivo = !otro
+  // Duo mode needs the other person and Supabase behind it (Realtime).
+  const duoAvailable = Boolean(other) && !esDemo;
+  const reason = !other
     ? 'Primero invitá a la otra persona desde Ajustes.'
     : esDemo
       ? 'En la demo no hay Realtime: necesita Supabase del otro lado.'
       : null;
 
-  const [pendientes, sesion, vistas] = await Promise.all([
+  const [pending, session, assets] = await Promise.all([
     listarPendientes(perfil.id),
-    deADos ? nocheReciente(perfil.id) : null,
-    deADos ? fichasParaJuegos(perfil.id) : null,
+    duoAvailable ? recentNight(perfil.id) : null,
+    duoAvailable ? gameAssets(perfil.id) : null,
   ]);
 
-  const cabecera = (
+  const header = (
     <header className="mb-5">
       <Link
         href="/pendientes"
@@ -55,29 +55,29 @@ export default async function Noche({
     </header>
   );
 
-  if (sesion && otro && vistas) {
-    const disponibilidad = Object.fromEntries(
-      JUEGOS.map((j) => [j, porQueNoSePuede(j, vistas)]),
-    ) as Record<Juego, string | null>;
+  if (session && other && assets) {
+    const availability = Object.fromEntries(
+      GAMES.map((g) => [g, whyUnavailable(g, assets)]),
+    ) as Record<Game, string | null>;
     return (
       <>
-        {cabecera}
-        <SesionNoche
-          inicial={sesion}
-          yo={yo}
-          otro={otro}
-          espacioId={perfil.espacioId}
-          pendientes={pendientes}
-          disponibilidad={disponibilidad}
+        {header}
+        <NightSession
+          initial={session}
+          me={me}
+          other={other}
+          spaceId={perfil.espacioId}
+          pending={pending}
+          availability={availability}
         />
       </>
     );
   }
 
-  if (pendientes.length === 0) {
+  if (pending.length === 0) {
     return (
       <>
-        {cabecera}
+        {header}
         <Vacio
           dibujo="entrada"
           titulo="No hay de dónde elegir"
@@ -91,16 +91,16 @@ export default async function Noche({
   if (modo === 'solo') {
     return (
       <>
-        {cabecera}
-        <EleccionIndividual pendientes={pendientes} />
+        {header}
+        <SoloPick pending={pending} />
       </>
     );
   }
 
   return (
     <>
-      {cabecera}
-      <ElegirModo deADos={deADos} motivo={motivo} otro={otro} />
+      {header}
+      <ChooseMode duoAvailable={duoAvailable} reason={reason} other={other} />
     </>
   );
 }

@@ -8,21 +8,21 @@ import {
   entradas,
   espacios,
   invitaciones,
-  noches,
+  nights,
   peliculas,
   perfiles,
   puntajes,
   vEntradasPuntuadas,
   vPorGenero,
   type EntradaPuntuada,
-  type Noche,
+  type Night,
   type Perfil,
   type Tipo,
 } from './index';
 import { createHash, randomBytes } from 'node:crypto';
 import { hoyISO, ZONA_LIBRETA } from '@/lib/fechas';
-import { FASES_VIVAS, type Carta, type Juego, type NochePublica } from '@/lib/noche';
-import type { TituloParaAhorcar } from '@/lib/juegos/ahorcado';
+import { LIVE_PHASES, type Card, type Game, type PublicNight } from '@/lib/movie-night';
+import type { HangmanTitle } from '@/lib/games/hangman';
 
 /* ---------------------------------------------------------------------------
    Todo el acceso a datos vive acá, no disperso entre componentes.
@@ -163,7 +163,7 @@ export async function listarPendientes(userId: string) {
         generos: vEntradasPuntuadas.generos,
         posterPath: vEntradasPuntuadas.posterPath,
         creadaEn: vEntradasPuntuadas.creadaEn,
-        elegidaEn: vEntradasPuntuadas.elegidaEn,
+        pickedAt: vEntradasPuntuadas.pickedAt,
         agregadaPor: vEntradasPuntuadas.agregadaPor,
         agregadaPorNombre: perfiles.nombre,
         agregadaPorColor: perfiles.color,
@@ -368,8 +368,8 @@ export async function marcarComoVista(
   return comoUsuario(userId, (tx) =>
     tx
       .update(entradas)
-      // Si era «la de esta noche», ya no espera a nadie.
-      .set({ estado: 'vista', vistaEl: datos.vistaEl ?? hoy(), lugar: datos.lugar || null, elegidaEn: null })
+      // If it was tonight's pick, it is no longer waiting for anyone.
+      .set({ estado: 'vista', vistaEl: datos.vistaEl ?? hoy(), lugar: datos.lugar || null, pickedAt: null })
       .where(eq(entradas.id, entradaId)),
   );
 }
@@ -513,258 +513,258 @@ export async function sumarAlEspacio(userId: string, espacioId: string, nombre: 
   });
 }
 
-/* ------------------------------ noche de peli ---------------------------- */
+/* ------------------------------- movie night ----------------------------- */
 
 type Tx = Parameters<Parameters<typeof comoUsuario>[1]>[0];
 
-/** Una sesión abandonada no bloquea la siguiente: a las 6 horas se da por cerrada. */
-const HORAS_DE_VIDA = 6;
-const vencida = () => new Date(Date.now() - HORAS_DE_VIDA * 3_600_000);
+/** An abandoned session does not block the next one: after 6 hours it is considered closed. */
+const LIFETIME_HOURS = 6;
+const expiredBefore = () => new Date(Date.now() - LIFETIME_HOURS * 3_600_000);
 
-/** La fila sin el secreto: lo único que sale al navegador. */
-export function publica(noche: Noche): NochePublica {
-  const { secreto: _secreto, ...resto } = noche;
-  return resto;
+/** The row without the secret: the only thing that goes out to the browser. */
+export function toPublic(night: Night): PublicNight {
+  const { secret: _secret, ...rest } = night;
+  return rest;
 }
 
 /**
- * Marca una pendiente como «la de esta noche» (o ninguna, con null). Primero
- * suelta la que hubiera: el índice único no deja dos por espacio.
+ * Marks a pending entry as "tonight's pick" (or none, with null). First lets go
+ * of whatever was picked: the unique index does not allow two per space.
  */
-async function marcarElegidaEn(tx: Tx, espacioId: string, entradaId: string | null) {
+async function setPickedIn(tx: Tx, spaceId: string, entryId: string | null) {
   await tx
     .update(entradas)
-    .set({ elegidaEn: null })
-    .where(and(eq(entradas.espacioId, espacioId), isNotNull(entradas.elegidaEn)));
-  if (entradaId) {
-    const filas = await tx
+    .set({ pickedAt: null })
+    .where(and(eq(entradas.espacioId, spaceId), isNotNull(entradas.pickedAt)));
+  if (entryId) {
+    const rows = await tx
       .update(entradas)
-      .set({ elegidaEn: new Date() })
-      .where(and(eq(entradas.id, entradaId), eq(entradas.estado, 'pendiente')))
+      .set({ pickedAt: new Date() })
+      .where(and(eq(entradas.id, entryId), eq(entradas.estado, 'pendiente')))
       .returning({ id: entradas.id });
-    if (filas.length === 0) throw new Error('Esa película ya no está en pendientes');
+    if (rows.length === 0) throw new Error('Esa película ya no está en pendientes');
   }
 }
 
-export async function marcarElegida(userId: string, espacioId: string, entradaId: string | null) {
-  return comoUsuario(userId, (tx) => marcarElegidaEn(tx, espacioId, entradaId));
+export async function setPicked(userId: string, spaceId: string, entryId: string | null) {
+  return comoUsuario(userId, (tx) => setPickedIn(tx, spaceId, entryId));
 }
 
 /**
- * El modo individual no tiene sesión: el sorteo es local y acá queda solo el
- * resultado, como una noche ya terminada, para que Resumen la cuente.
+ * Solo mode has no session: the draw is local and only the result is kept
+ * here, as an already finished night, so Resumen can count it.
  */
-export async function registrarEleccionIndividual(userId: string, espacioId: string, entradaId: string) {
+export async function recordSoloPick(userId: string, spaceId: string, entryId: string) {
   return comoUsuario(userId, async (tx) => {
-    await marcarElegidaEn(tx, espacioId, entradaId);
-    await tx.insert(noches).values({
-      espacioId,
-      modo: 'individual',
-      fase: 'terminada',
-      juego: null,
-      creadaPor: userId,
-      entradaId,
-      terminadaEn: new Date(),
+    await setPickedIn(tx, spaceId, entryId);
+    await tx.insert(nights).values({
+      spaceId,
+      mode: 'individual',
+      phase: 'terminada',
+      game: null,
+      createdBy: userId,
+      entryId,
+      finishedAt: new Date(),
     });
   });
 }
 
-/** La sesión viva del espacio, si hay una y no está vencida. */
-export async function nocheActiva(userId: string): Promise<NochePublica | null> {
+/** The space's live session, if there is one and it has not expired. */
+export async function activeNight(userId: string): Promise<PublicNight | null> {
   return comoUsuario(userId, async (tx) => {
-    const [fila] = await tx
+    const [row] = await tx
       .select()
-      .from(noches)
-      .where(and(inArray(noches.fase, FASES_VIVAS), gt(noches.creadaEn, vencida())));
-    return fila ? publica(fila) : null;
+      .from(nights)
+      .where(and(inArray(nights.phase, LIVE_PHASES), gt(nights.createdAt, expiredBefore())));
+    return row ? toPublic(row) : null;
   });
 }
 
 /**
- * Lo que la pantalla de la noche tiene que mostrar: la sesión viva, o la que
- * recién terminó mientras su elegida siga esperando arriba de Pendientes (así
- * un reload no borra el festejo), o una cancelada hace un momento (para que
- * el otro celular, si recarga, igual vea quién cerró).
+ * What the night screen has to show: the live session, or the one that just
+ * ended while its pick is still waiting at the top of Pendientes (so a reload
+ * does not wipe the celebration), or one cancelled a moment ago (so the other
+ * phone, if it reloads, still sees who closed it).
  */
-export async function nocheReciente(userId: string): Promise<NochePublica | null> {
-  const viva = await nocheActiva(userId);
-  if (viva) return viva;
+export async function recentNight(userId: string): Promise<PublicNight | null> {
+  const live = await activeNight(userId);
+  if (live) return live;
 
   return comoUsuario(userId, async (tx) => {
-    const [ultima] = await tx
-      .select({ noche: noches, elegidaEn: entradas.elegidaEn })
-      .from(noches)
-      .leftJoin(entradas, eq(entradas.id, noches.entradaId))
-      .where(and(eq(noches.modo, 'duo'), inArray(noches.fase, ['terminada', 'cancelada'])))
-      .orderBy(desc(noches.actualizadaEn))
+    const [last] = await tx
+      .select({ night: nights, pickedAt: entradas.pickedAt })
+      .from(nights)
+      .leftJoin(entradas, eq(entradas.id, nights.entryId))
+      .where(and(eq(nights.mode, 'duo'), inArray(nights.phase, ['terminada', 'cancelada'])))
+      .orderBy(desc(nights.updatedAt))
       .limit(1);
-    if (!ultima) return null;
+    if (!last) return null;
 
-    const haceUnRato = Date.now() - ultima.noche.actualizadaEn.getTime() < 2 * 60_000;
-    if (ultima.noche.fase === 'cancelada') return haceUnRato ? publica(ultima.noche) : null;
-    // Terminada: mientras su elegida siga esperando. Soltarla es «elegir otra».
-    return ultima.elegidaEn !== null ? publica(ultima.noche) : null;
+    const justNow = Date.now() - last.night.updatedAt.getTime() < 2 * 60_000;
+    if (last.night.phase === 'cancelada') return justNow ? toPublic(last.night) : null;
+    // Finished: while its pick is still waiting. Letting it go is "pick another".
+    return last.pickedAt !== null ? toPublic(last.night) : null;
   });
 }
 
-export async function buscarNoche(userId: string, id: string): Promise<NochePublica | null> {
+export async function findNight(userId: string, id: string): Promise<PublicNight | null> {
   return comoUsuario(userId, async (tx) => {
-    const [fila] = await tx.select().from(noches).where(eq(noches.id, id));
-    return fila ? publica(fila) : null;
+    const [row] = await tx.select().from(nights).where(eq(nights.id, id));
+    return row ? toPublic(row) : null;
   });
 }
 
 /**
- * Abre una sesión, o devuelve la que ya estaba abierta. Si los dos tocan «De a
- * dos» al mismo tiempo, el índice parcial hace chocar al segundo y los dos
- * terminan en la misma fila.
+ * Opens a session, or returns the one already open. If both tap "De a dos" at
+ * the same time, the partial index makes the second one collide and both end
+ * up on the same row.
  */
-export async function crearNoche(userId: string, espacioId: string): Promise<NochePublica> {
+export async function createNight(userId: string, spaceId: string): Promise<PublicNight> {
   return comoUsuario(userId, async (tx) => {
     await tx
-      .update(noches)
-      .set({ fase: 'cancelada', actualizadaEn: new Date() })
-      .where(and(inArray(noches.fase, FASES_VIVAS), lt(noches.creadaEn, vencida())));
+      .update(nights)
+      .set({ phase: 'cancelada', updatedAt: new Date() })
+      .where(and(inArray(nights.phase, LIVE_PHASES), lt(nights.createdAt, expiredBefore())));
 
-    const [nueva] = await tx
-      .insert(noches)
+    const [created] = await tx
+      .insert(nights)
       .values({
-        espacioId,
-        modo: 'duo',
-        fase: 'esperando',
-        creadaPor: userId,
-        estado: { presentes: [userId], candidatas: {} },
+        spaceId,
+        mode: 'duo',
+        phase: 'esperando',
+        createdBy: userId,
+        state: { present: [userId], candidates: {} },
       })
       .onConflictDoNothing()
       .returning();
-    if (nueva) return publica(nueva);
+    if (created) return toPublic(created);
 
-    const [activa] = await tx.select().from(noches).where(inArray(noches.fase, FASES_VIVAS));
-    if (!activa) throw new Error('No se pudo abrir la sesión');
-    return publica(activa);
+    const [active] = await tx.select().from(nights).where(inArray(nights.phase, LIVE_PHASES));
+    if (!active) throw new Error('No se pudo abrir la sesión');
+    return toPublic(active);
   });
 }
 
-export type Transicion = {
-  cambios: Partial<Pick<Noche, 'fase' | 'juego' | 'estado' | 'secreto' | 'ganadorId' | 'entradaId'>>;
-  /** Si la noche termina, con qué entrada. Marca «la de esta noche» en la misma transacción. */
-  elegida?: string;
+export type Transition = {
+  changes: Partial<Pick<Night, 'phase' | 'game' | 'state' | 'secret' | 'winnerId' | 'entryId'>>;
+  /** If the night ends, with which entry. Marks "tonight's pick" in the same transaction. */
+  picked?: string;
 };
 
 /**
- * Toda transición de una sesión pasa por acá: lee la fila bloqueada
- * (`for update`), aplica la regla y escribe subiendo `version`. Dos jugadas
- * que llegan a la vez se serializan, y la segunda ve el estado que dejó la
- * primera en vez de pisarlo.
+ * Every transition of a session goes through here: it reads the locked row
+ * (`for update`), applies the rule and writes bumping `version`. Two moves
+ * that arrive at once are serialized, and the second one sees the state the
+ * first one left instead of overwriting it.
  */
-export async function transicionarNoche(
+export async function transitionNight(
   userId: string,
   id: string,
-  regla: (noche: Noche) => Transicion | Promise<Transicion>,
-): Promise<NochePublica> {
+  rule: (night: Night) => Transition | Promise<Transition>,
+): Promise<PublicNight> {
   return comoUsuario(userId, async (tx) => {
-    const [actual] = await tx.select().from(noches).where(eq(noches.id, id)).for('update');
-    if (!actual) throw new Error('Esa sesión ya no existe');
+    const [current] = await tx.select().from(nights).where(eq(nights.id, id)).for('update');
+    if (!current) throw new Error('Esa sesión ya no existe');
 
-    const { cambios, elegida } = await regla(actual);
-    const termina = cambios.fase === 'terminada';
+    const { changes, picked } = await rule(current);
+    const ends = changes.phase === 'terminada';
 
-    const [nueva] = await tx
-      .update(noches)
+    const [updated] = await tx
+      .update(nights)
       .set({
-        ...cambios,
-        version: actual.version + 1,
-        actualizadaEn: new Date(),
-        ...(termina ? { terminadaEn: new Date() } : {}),
+        ...changes,
+        version: current.version + 1,
+        updatedAt: new Date(),
+        ...(ends ? { finishedAt: new Date() } : {}),
       })
-      .where(eq(noches.id, id))
+      .where(eq(nights.id, id))
       .returning();
 
-    if (termina && elegida) await marcarElegidaEn(tx, actual.espacioId, elegida);
-    return publica(nueva!);
+    if (ends && picked) await setPickedIn(tx, current.spaceId, picked);
+    return toPublic(updated!);
   });
 }
 
-/** Las pelis vistas, con lo que los juegos necesitan: cartas y títulos. */
-export async function fichasParaJuegos(userId: string): Promise<{ fichas: Carta[]; titulos: TituloParaAhorcar[] }> {
+/** The watched movies, with what the games need: cards and titles. */
+export async function gameAssets(userId: string): Promise<{ cards: Card[]; titles: HangmanTitle[] }> {
   return comoUsuario(userId, async (tx) => {
-    const filas = await tx
+    const rows = await tx
       .select({
-        entradaId: vEntradasPuntuadas.id,
-        titulo: vEntradasPuntuadas.titulo,
-        anio: vEntradasPuntuadas.anio,
+        entryId: vEntradasPuntuadas.id,
+        title: vEntradasPuntuadas.titulo,
+        year: vEntradasPuntuadas.anio,
         posterPath: vEntradasPuntuadas.posterPath,
-        generos: vEntradasPuntuadas.generos,
+        genres: vEntradasPuntuadas.generos,
       })
       .from(vEntradasPuntuadas)
       .where(eq(vEntradasPuntuadas.estado, 'vista'));
     return {
-      fichas: filas.map(({ generos: _g, ...f }) => f),
-      titulos: filas.map((f) => ({ titulo: f.titulo, anio: f.anio, genero: f.generos[0] ?? null })),
+      cards: rows.map(({ genres: _g, ...c }) => c),
+      titles: rows.map((r) => ({ title: r.title, year: r.year, genre: r.genres[0] ?? null })),
     };
   });
 }
 
-export type TallyNoches = {
+export type NightsTally = {
   total: number;
-  coincidieron: number;
-  alAzar: number;
-  porPersona: Record<string, number>;
-  porJuego: Partial<Record<Juego, number>>;
+  agreed: number;
+  byDice: number;
+  byPerson: Record<string, number>;
+  byGame: Partial<Record<Game, number>>;
 };
 
-/** Cuántas noches hubo y quién ganó cuántas, para Resumen. */
-export async function tallyNoches(userId: string): Promise<TallyNoches> {
+/** How many nights there were and who won how many, for Resumen. */
+export async function nightsTally(userId: string): Promise<NightsTally> {
   return comoUsuario(userId, async (tx) => {
-    const filas = await tx
+    const rows = await tx
       .select({
-        modo: noches.modo,
-        juego: noches.juego,
-        ganadorId: noches.ganadorId,
-        cantidad: sql<number>`count(*)::int`,
+        mode: nights.mode,
+        game: nights.game,
+        winnerId: nights.winnerId,
+        count: sql<number>`count(*)::int`,
       })
-      .from(noches)
-      .where(eq(noches.fase, 'terminada'))
-      .groupBy(noches.modo, noches.juego, noches.ganadorId);
+      .from(nights)
+      .where(eq(nights.phase, 'terminada'))
+      .groupBy(nights.mode, nights.game, nights.winnerId);
 
-    const tally: TallyNoches = { total: 0, coincidieron: 0, alAzar: 0, porPersona: {}, porJuego: {} };
-    for (const f of filas) {
-      tally.total += f.cantidad;
-      if (f.modo === 'individual') tally.alAzar += f.cantidad;
-      else if (!f.ganadorId) tally.coincidieron += f.cantidad;
-      else tally.porPersona[f.ganadorId] = (tally.porPersona[f.ganadorId] ?? 0) + f.cantidad;
-      if (f.juego) tally.porJuego[f.juego] = (tally.porJuego[f.juego] ?? 0) + f.cantidad;
+    const tally: NightsTally = { total: 0, agreed: 0, byDice: 0, byPerson: {}, byGame: {} };
+    for (const r of rows) {
+      tally.total += r.count;
+      if (r.mode === 'individual') tally.byDice += r.count;
+      else if (!r.winnerId) tally.agreed += r.count;
+      else tally.byPerson[r.winnerId] = (tally.byPerson[r.winnerId] ?? 0) + r.count;
+      if (r.game) tally.byGame[r.game] = (tally.byGame[r.game] ?? 0) + r.count;
     }
     return tally;
   });
 }
 
-/** Las últimas noches, con el título y quién ganó. */
-export async function historialDeNoches(userId: string, limite = 6) {
+/** The latest nights, with the title and who won. */
+export async function nightsHistory(userId: string, limit = 6) {
   return comoUsuario(userId, (tx) =>
     tx
       .select({
-        id: noches.id,
-        modo: noches.modo,
-        juego: noches.juego,
-        ganadorId: noches.ganadorId,
-        ganadorNombre: perfiles.nombre,
-        entradaId: noches.entradaId,
-        titulo: vEntradasPuntuadas.titulo,
+        id: nights.id,
+        mode: nights.mode,
+        game: nights.game,
+        winnerId: nights.winnerId,
+        winnerName: perfiles.nombre,
+        entryId: nights.entryId,
+        title: vEntradasPuntuadas.titulo,
         posterPath: vEntradasPuntuadas.posterPath,
-        anio: vEntradasPuntuadas.anio,
-        terminadaEn: noches.terminadaEn,
+        year: vEntradasPuntuadas.anio,
+        finishedAt: nights.finishedAt,
       })
-      .from(noches)
-      .leftJoin(perfiles, eq(perfiles.id, noches.ganadorId))
-      .leftJoin(vEntradasPuntuadas, eq(vEntradasPuntuadas.id, noches.entradaId))
-      .where(eq(noches.fase, 'terminada'))
-      .orderBy(desc(noches.terminadaEn))
-      .limit(limite),
+      .from(nights)
+      .leftJoin(perfiles, eq(perfiles.id, nights.winnerId))
+      .leftJoin(vEntradasPuntuadas, eq(vEntradasPuntuadas.id, nights.entryId))
+      .where(eq(nights.phase, 'terminada'))
+      .orderBy(desc(nights.finishedAt))
+      .limit(limit),
   );
 }
 
-export type NocheDelHistorial = Awaited<ReturnType<typeof historialDeNoches>>[number];
+export type HistoryNight = Awaited<ReturnType<typeof nightsHistory>>[number];
 
 function hoy() {
   return hoyISO(ZONA_LIBRETA);

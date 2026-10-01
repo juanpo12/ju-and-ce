@@ -17,12 +17,12 @@ import { cn } from '@/lib/utils';
 export function BotonYaLaVimos({
   entradaId,
   titulo,
-  invertido = false,
+  inverted = false,
 }: {
   entradaId: string;
   titulo: string;
-  /** Sobre un fondo de color (la de esta noche): el botón se pinta al revés. */
-  invertido?: boolean;
+  /** On a colored background (tonight's pick) the button is painted the other way round. */
+  inverted?: boolean;
 }) {
   const router = useRouter();
   const [pendiente, empezar] = useTransition();
@@ -47,7 +47,7 @@ export function BotonYaLaVimos({
       transition={{ type: 'spring', bounce: 0.3, duration: 0.35 }}
       className={cn(
         'foco relative inline-flex h-10 items-center justify-center gap-1.5 overflow-visible rounded-full text-sm font-semibold shadow-baja transition-[filter] hover:brightness-110',
-        invertido ? 'bg-superficie text-tinta' : 'bg-acento text-sobre-acento',
+        inverted ? 'bg-superficie text-tinta' : 'bg-acento text-sobre-acento',
         hecho ? 'w-10' : 'px-4',
       )}
     >
@@ -62,7 +62,7 @@ export function BotonYaLaVimos({
           >
             <motion.span
               aria-hidden
-              className={cn('absolute -inset-3 rounded-full border-2', invertido ? 'border-current' : 'border-acento')}
+              className={cn('absolute -inset-3 rounded-full border-2', inverted ? 'border-current' : 'border-acento')}
               initial={{ scale: 0.5, opacity: 0.9 }}
               animate={{ scale: 1.6, opacity: 0 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}

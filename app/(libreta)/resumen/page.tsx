@@ -3,30 +3,30 @@ import { personasDe } from '@/lib/personas';
 import {
   contarPorGenero,
   distribucionDePuntajes,
-  historialDeNoches,
-  tallyNoches,
+  nightsHistory,
+  nightsTally,
   traerResumen,
 } from '@/db/queries';
 import { Vacio } from '@/components/Vacio';
 import { BotonLink } from '@/components/Boton';
 import { Contador } from '@/components/Contador';
 import { GraficoGeneros, GraficoPuntajes } from './Graficos';
-import { NochesResumen } from './NochesResumen';
+import { NightsSummary } from './NightsSummary';
 
 export const metadata = { title: 'Resumen — Nuestra libreta' };
 
 export default async function Resumen() {
   const perfil = await exigirPerfil();
-  const { yo, otro } = personasDe(perfil);
+  const { yo: me, otro: other } = personasDe(perfil);
 
   // Las agregaciones se calculan en Postgres, no en el navegador: llegan
   // listas para pintar.
-  const [numeros, generos, distribucion, noches, ultimas] = await Promise.all([
+  const [numeros, generos, distribucion, nights, latestNights] = await Promise.all([
     traerResumen(perfil.id),
     contarPorGenero(perfil.id),
     distribucionDePuntajes(perfil.id),
-    tallyNoches(perfil.id),
-    historialDeNoches(perfil.id, 4),
+    nightsTally(perfil.id),
+    nightsHistory(perfil.id, 4),
   ]);
 
   if (!numeros.vistas) {
@@ -85,7 +85,7 @@ export default async function Resumen() {
           </section>
         )}
 
-        {noches.total > 0 && <NochesResumen tally={noches} ultimas={ultimas} yo={yo} otro={otro} />}
+        {nights.total > 0 && <NightsSummary tally={nights} latest={latestNights} me={me} other={other} />}
       </div>
     </>
   );

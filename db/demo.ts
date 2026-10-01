@@ -80,7 +80,7 @@ await pg.exec(`
     (792307, 'Pobres criaturas', 'Poor Things', 2023, 141, 'Yorgos Lanthimos',
       '{"Ciencia ficción","Comedia","Romance"}', 'Bella Baxter sale a conocer el mundo con una curiosidad sin filtro.');
 
-  -- Una serie: TMDB la numera aparte, por eso lleva su tipo.
+  -- A series: TMDB numbers them separately, hence its type.
   insert into peliculas (tmdb_id, tipo, titulo, titulo_original, anio, duracion_min, director, generos, sinopsis) values
     (136315, 'serie', 'The Bear', 'The Bear', 2022, 30, 'Christopher Storer',
       '{"Comedia","Drama"}', 'Un chef de alta cocina vuelve a Chicago a hacerse cargo del local de sándwiches de su familia.');
@@ -101,7 +101,7 @@ await pg.exec(`
   insert into entradas (id, espacio_id, tmdb_id, tipo, estado, agregada_por) values
     ('11111111-0000-4000-8000-000000000012'::uuid, '${ESPACIO}'::uuid, 136315, 'serie', 'pendiente', '${PERFIL_DEMO}'::uuid);
 
-  -- Dos noches ya jugadas, para que Resumen tenga algo que contar.
+  -- Two nights already played, so Resumen has something to count.
   insert into noches (espacio_id, modo, fase, juego, creada_por, ganador_id, entrada_id, terminada_en, actualizada_en) values
     ('${ESPACIO}'::uuid, 'duo', 'terminada', 'ppt',      '${PERFIL_DEMO}'::uuid, '${CECI}'::uuid,        '11111111-0000-4000-8000-000000000003'::uuid, now() - interval '20 days', now() - interval '20 days'),
     ('${ESPACIO}'::uuid, 'duo', 'terminada', 'ahorcado', '${CECI}'::uuid,        '${PERFIL_DEMO}'::uuid, '11111111-0000-4000-8000-000000000005'::uuid, now() - interval '9 days',  now() - interval '9 days');

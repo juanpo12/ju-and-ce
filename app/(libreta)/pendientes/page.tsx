@@ -2,34 +2,34 @@ import Link from 'next/link';
 import { exigirPerfil } from '@/lib/sesion';
 import { personasDe } from '@/lib/personas';
 import { esDemo } from '@/lib/demo';
-import { historialDeNoches, listarPendientes, nocheActiva } from '@/db/queries';
+import { activeNight, listarPendientes, nightsHistory } from '@/db/queries';
 import { Poster } from '@/components/Poster';
 import { Avatar } from '@/components/Avatar';
 import { Vacio } from '@/components/Vacio';
 import { BotonLink } from '@/components/Boton';
 import { ItemEscalonado } from '@/components/Escalonado';
 import { BotonYaLaVimos } from './BotonYaLaVimos';
-import { LaDeEstaNoche } from './LaDeEstaNoche';
-import { BannerNoche } from './BannerNoche';
+import { TonightsPick } from './TonightsPick';
+import { NightBanner } from './NightBanner';
 
 export const metadata = { title: 'Pendientes — Nuestra libreta' };
 
 export default async function Pendientes() {
   const perfil = await exigirPerfil();
-  const { yo, otro } = personasDe(perfil);
+  const { yo: me, otro: other } = personasDe(perfil);
 
-  // La sesión viva solo existe con la otra persona y con Supabase del otro lado.
-  const [todas, sesion, [ultima]] = await Promise.all([
+  // A live session only exists with the other person and with Supabase behind it.
+  const [all, session, [latest]] = await Promise.all([
     listarPendientes(perfil.id),
-    otro && !esDemo ? nocheActiva(perfil.id) : null,
-    historialDeNoches(perfil.id, 1),
+    other && !esDemo ? activeNight(perfil.id) : null,
+    nightsHistory(perfil.id, 1),
   ]);
 
-  const elegida = todas.find((p) => p.elegidaEn) ?? null;
-  const pendientes = elegida ? todas.filter((p) => p.id !== elegida.id) : todas;
+  const picked = all.find((p) => p.pickedAt) ?? null;
+  const pending = picked ? all.filter((p) => p.id !== picked.id) : all;
 
-  // Quién la sumó, con su color: el mismo que en la grilla y en la ficha.
-  const quien = (id: string | null) => (id === yo.id ? yo : otro?.id === id ? otro : null);
+  // Who added it, with their color: the same one as in the grid and the detail page.
+  const personOf = (id: string | null) => (id === me.id ? me : other?.id === id ? other : null);
 
   return (
     <>
@@ -37,15 +37,15 @@ export default async function Pendientes() {
         <div>
           <h1 className="font-titulo text-5xl leading-none text-tinta md:text-6xl">Pendientes</h1>
           <p className="mt-1 text-sm text-tinta-suave">
-            {todas.length === 0
+            {all.length === 0
               ? 'La lista está vacía'
-              : `${todas.length} ${todas.length === 1 ? 'esperando' : 'esperando turno'}`}
+              : `${all.length} ${all.length === 1 ? 'esperando' : 'esperando turno'}`}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {todas.length > 0 && !sesion && (
+          {all.length > 0 && !session && (
             <BotonLink href="/pendientes/noche" variante="secundario">
-              <Dado />
+              <Dice />
               Noche de peli
             </BotonLink>
           )}
@@ -55,18 +55,18 @@ export default async function Pendientes() {
         </div>
       </header>
 
-      {sesion && otro && <BannerNoche sesion={sesion} yo={yo} otro={otro} />}
+      {session && other && <NightBanner session={session} me={me} other={other} />}
 
-      {elegida && (
-        <LaDeEstaNoche
-          elegida={elegida}
-          yo={yo}
-          otro={otro}
-          noche={ultima?.entradaId === elegida.id ? ultima : null}
+      {picked && (
+        <TonightsPick
+          pick={picked}
+          me={me}
+          other={other}
+          night={latest?.entryId === picked.id ? latest : null}
         />
       )}
 
-      {todas.length === 0 ? (
+      {all.length === 0 ? (
         <Vacio
           dibujo="entrada"
           titulo="Nada anotado"
@@ -75,8 +75,8 @@ export default async function Pendientes() {
         />
       ) : (
         <ul className="grid gap-3 lg:grid-cols-2">
-          {pendientes.map((p, i) => {
-            const persona = quien(p.agregadaPor);
+          {pending.map((p, i) => {
+            const person = personOf(p.agregadaPor);
             return (
               <ItemEscalonado
                 key={p.id}
@@ -106,7 +106,7 @@ export default async function Pendientes() {
                       .join(' · ')}
                   </p>
                   <p className="mt-0.5 flex items-center gap-1.5 text-xs text-tinta-suave">
-                    {persona && <Avatar persona={persona} medida="chico" />}
+                    {person && <Avatar persona={person} medida="chico" />}
                     La sumó {p.agregadaPor === perfil.id ? 'vos' : p.agregadaPorNombre}
                   </p>
                 </div>
@@ -121,8 +121,8 @@ export default async function Pendientes() {
   );
 }
 
-/** Un dado, en el mismo trazo que los íconos de la nav. */
-function Dado() {
+/** A die, in the same stroke as the nav icons. */
+function Dice() {
   return (
     <svg
       viewBox="0 0 24 24"

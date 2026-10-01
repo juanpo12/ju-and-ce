@@ -85,8 +85,8 @@ solo. El plan hobby sobra para dos personas.
 | `npm run db:seed` | Carga las tres películas |
 | `npm run alta` | Crea la libreta y suma personas |
 | `npm run iconos` | Regenera los PNG del manifest |
-| `npm run juegos:test` | La lógica de los juegos de la noche de peli, sin base |
-| `npm run palabras` | Regenera la lista de palabras del juego de la palabra |
+| `npm run games:test` | La lógica de los juegos de la noche de peli, sin base |
+| `npm run words` | Regenera la lista de palabras del juego de la palabra |
 | `npm run typecheck` | `tsc --noEmit` |
 
 `npm run db:test` no necesita nada: corre Postgres 18 dentro de Node (PGlite) con
@@ -120,8 +120,8 @@ lib/
   supabase/               client (navegador), server (cookies)
   sesion.ts               perfilActual() y exigirPerfil()
   tmdb.ts                 el cliente de TMDB, solo servidor
-  noche.ts                los tipos y la máquina de estados de la noche de peli
-  juegos/                 la lógica pura de cada juego, con sus pruebas
+  movie-night.ts          los tipos y la máquina de estados de la noche de peli
+  games/                  la lógica pura de cada juego, con sus pruebas
 styles/temas.css          los temas como variables CSS
 proxy.ts                  refresco de sesión y guardia de rutas
 db/demo.ts                el Postgres de juguete de `npm run demo`
@@ -251,10 +251,10 @@ Desde Pendientes, «Noche de peli» elige qué ver. Dos modos:
   define la moneda.
 
 La sesión es una fila de `noches` con el estado como `jsonb`. Toda transición
-pasa por `transicionarNoche()` en `db/queries.ts`, que lee la fila con
+pasa por `transitionNight()` en `db/queries.ts`, que lee la fila con
 `for update`, aplica la regla y sube `version`: dos jugadas simultáneas se
 serializan. Los dos celulares la siguen por un canal propio de Realtime
-(`SesionNoche.tsx`), que adopta una fila solo si su `version` es mayor. Lo que
+(`NightSession.tsx`), que adopta una fila solo si su `version` es mayor. Lo que
 el servidor necesita para arbitrar y no conviene mostrar (la jugada del otro
 antes de revelar, la palabra, el título) va en `secreto`, que se saca antes de
 responder; Realtime igual manda la fila entera, así que queda escondido de la
