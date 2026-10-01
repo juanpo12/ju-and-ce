@@ -118,52 +118,54 @@ test('memory: odd pairs, turns and the end', () => {
   assert.fail('should have ended');
 });
 
-test('hangman: mask, letters, misses and guess', () => {
+test('hangman: mask, each one races on their own, misses and the full guess', () => {
   assert.equal(normalize('Anatomía de una caída'), 'ANATOMIA DE UNA CAIDA');
   assert.equal(mask('La La Land', new Set(['L'])), 'L_ L_ L___');
   assert.equal(isEligible('Up'), false, 'too short');
   assert.equal(isEligible('千と千尋の神隠し'), false, 'cannot be typed on the keyboard');
   assert.equal(isEligible('Parásitos'), true);
 
-  const { match, title } = startHangman(
-    [{ title: 'Elvis', year: 2022, genre: 'Drama' }],
-    'juan',
-    seededRng(1),
-  );
+  const { match, title } = startHangman([{ title: 'Elvis', year: 2022, genre: 'Drama' }], P, seededRng(1));
   assert.equal(title, 'Elvis');
-  assert.equal(match.mask, '_____');
+  assert.equal(match.pattern, '_____');
   assert.equal(match.hint, '2022 · Drama');
+  assert.equal(match.runs.juan!.mask, '_____');
 
+  // Juan's letters do not show up on Ceci's side.
   let r = applyLetter(match, title, 'juan', 'e', P);
-  assert.equal(r.match.mask, 'E____');
-  assert.equal(r.match.turn, 'ceci');
-  assert.throws(() => applyLetter(r.match, title, 'juan', 'l', P), /No es tu turno/);
-  assert.throws(() => applyLetter(r.match, title, 'ceci', 'e', P), /ya salió/);
-  assert.throws(() => applyLetter(r.match, title, 'ceci', '3', P), /no es una letra/);
+  assert.equal(r.match.runs.juan!.mask, 'E____');
+  assert.equal(r.match.runs.ceci!.mask, '_____');
+  assert.throws(() => applyLetter(r.match, title, 'juan', 'e', P), /ya la probaste/);
+  assert.throws(() => applyLetter(r.match, title, 'juan', '3', P), /no es una letra/);
 
+  // Ceci misses once; that is her miss alone.
   r = applyLetter(r.match, title, 'ceci', 'z', P);
-  assert.equal(r.match.misses, 1);
+  assert.equal(r.match.runs.ceci!.misses, 1);
+  assert.equal(r.match.runs.juan!.misses, 0);
 
-  const wrong = applyGuess(r.match, title, 'juan', 'elvia', P);
-  assert.deepEqual(wrong.end, { winnerId: 'ceci' });
+  // A wrong full guess knocks you out; the other keeps playing.
+  const wrong = applyGuess(r.match, title, 'ceci', 'elvia', P);
+  assert.equal(wrong.match.runs.ceci!.done, true);
+  assert.equal(wrong.end, undefined, 'Juan is still in the race');
+  assert.throws(() => applyLetter(wrong.match, title, 'ceci', 'l', P), /quedaste afuera/);
+
+  // A right full guess wins at once.
   const right = applyGuess(r.match, title, 'juan', ' élvis ', P);
   assert.deepEqual(right.end, { winnerId: 'juan' });
   assert.equal(right.match.title, 'Elvis', 'revealed at the end');
 
-  // Completing it letter by letter wins.
-  let m = r.match;
-  for (const l of ['l', 'v', 'i']) m = applyLetter(m, title, m.turn, l, P).match;
-  const end = applyLetter(m, title, m.turn, 's', P);
-  assert.equal(end.end?.winnerId, m.turn);
+  // Completing it letter by letter wins too.
+  let m = wrong.match;
+  for (const l of ['l', 'v', 'i']) m = applyLetter(m, title, 'juan', l, P).match;
+  const finished = applyLetter(m, title, 'juan', 's', P);
+  assert.deepEqual(finished.end, { winnerId: 'juan' });
 
-  // Six shared misses: nobody, the coin settles it.
+  // Both hanged: nobody got it, the coin decides.
   let q = match;
-  for (const l of ['a', 'b', 'c', 'd', 'f', 'g']) {
-    const step = applyLetter(q, title, q.turn, l, P);
-    q = step.match;
-    if (l === 'g') assert.deepEqual(step.end, { winnerId: null });
-    else assert.equal(step.end, undefined);
-  }
+  for (const who of P) for (const l of ['a', 'b', 'c', 'd', 'f', 'g']) q = applyLetter(q, title, who, l, P).match;
+  assert.equal(q.runs.juan!.done && q.runs.ceci!.done, true);
+  const both = applyLetter({ ...q, runs: { ...q.runs, ceci: { ...q.runs.ceci!, done: false, misses: 5 } } }, title, 'ceci', 'h', P);
+  assert.deepEqual(both.end, { winnerId: null });
 });
 
 test('wordle: hints count each letter only once', () => {

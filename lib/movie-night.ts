@@ -155,21 +155,28 @@ export type MemoryMatch = {
   };
 };
 
+export type HangmanRun = {
+  /** The title with the letters this person has not found yet as "_". */
+  mask: string;
+  letters: { letter: string; hit: boolean }[];
+  misses: number;
+  /** Out of the race: hanged, or a wrong full guess. */
+  done: boolean;
+  guess?: { text: string; hit: boolean };
+};
+
 export type HangmanMatch = {
   game: 'ahorcado';
-  /** The title with missing letters as "_". Spaces and punctuation stay visible. */
-  mask: string;
-  letters: { letter: string; by: string; hit: boolean }[];
-  turn: string;
-  misses: number;
-  maxMisses: number;
+  /** The shape of the title before any letter: "_" per letter, spaces and punctuation visible. */
+  pattern: string;
   /** Something to go on: the year, or the genre. */
   hint: string | null;
-  guess?: { by: string; text: string; hit: boolean };
+  maxMisses: number;
+  /** Each person races on their own copy of the same title. */
+  runs: Record<string, HangmanRun>;
   /** Revealed when the match ends. */
   title?: string;
 };
-
 export type WordleHint = 'hit' | 'near' | 'miss';
 
 export type WordleMatch = {

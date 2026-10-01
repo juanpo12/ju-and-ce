@@ -16,7 +16,7 @@ import type { Table } from './types';
 const DESCRIPTION: Record<Game, string> = {
   ppt: 'Al mejor de 3. Cada uno elige en su celular y se revela a la vez.',
   memoria: 'Un tablero con pósters de lo que ya vieron. Por turnos: acertás, seguís.',
-  ahorcado: 'Un título de la biblioteca. Una letra por turno, o arriesgá.',
+  ahorcado: 'Un título de la biblioteca, cada uno lo adivina por su lado. El primero que lo completa gana.',
   wordle: 'La misma palabra de cinco letras para los dos. Menos intentos gana.',
   tateti: 'El de siempre, por turnos. Si empatan tres veces, moneda.',
   dados: 'Cada uno tira dos dados. El número más alto se lleva la ronda, al mejor de 3.',

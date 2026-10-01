@@ -71,7 +71,7 @@ export function startMatch(game: Game, ctx: MatchContext, rng: Rng, now = Date.n
       return { match, secret: { memory: { board } } };
     }
     case 'ahorcado': {
-      const { match, title } = startHangman(ctx.titles, ctx.starter, rng);
+      const { match, title } = startHangman(ctx.titles, ctx.players, rng);
       return { match, secret: { hangman: { title } } };
     }
     case 'wordle': {
