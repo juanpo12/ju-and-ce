@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'motion/react';
+import { Settings } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { BotonModo } from './BotonModo';
 
 /**
@@ -15,7 +17,7 @@ const SECCIONES = [
   { href: '/pendientes', texto: 'Pendientes', icono: Reloj },
   { href: '/agregar', texto: 'Agregar', icono: Mas },
   { href: '/resumen', texto: 'Resumen', icono: Grafico },
-  { href: '/ajustes', texto: 'Ajustes', icono: Rueda },
+  { href: '/jugar', texto: 'Jugar', icono: Joystick },
 ];
 
 function usarActiva() {
@@ -86,13 +88,39 @@ export function TabBar() {
   );
 }
 
-/** En mobile, arriba: el nombre de la libreta y el modo, al alcance sin ir a Ajustes. */
+/**
+ * Ajustes is not visited often: it sits as an icon next to the mode toggle at
+ * the top, and leaves its navigation slot to Jugar.
+ */
+function SettingsButton({ className }: { className?: string }) {
+  const on = usarActiva()('/ajustes');
+  return (
+    <Link
+      href="/ajustes"
+      aria-label="Ajustes"
+      title="Ajustes"
+      aria-current={on ? 'page' : undefined}
+      className={cn(
+        'foco tocable inline-flex size-10 items-center justify-center rounded-full transition-colors hover:bg-acento-suave hover:text-acento',
+        on ? 'bg-acento-suave text-acento' : 'text-tinta-suave',
+        className,
+      )}
+    >
+      <Settings className="size-5" strokeWidth={1.8} aria-hidden />
+    </Link>
+  );
+}
+
+/** On mobile, at the top: the notebook name, the mode toggle and Ajustes. */
 export function Cabecera({ espacio }: { espacio: string }) {
   return (
     <header className="safe-arriba sticky top-0 z-20 border-b border-borde/60 bg-fondo/85 backdrop-blur-md md:hidden">
       <div className="flex h-12 items-center justify-between pl-4 pr-1.5">
         <p className="truncate pr-1 font-titulo text-xl text-tinta">{espacio}</p>
-        <BotonModo />
+        <div className="flex shrink-0 items-center">
+          <BotonModo />
+          <SettingsButton />
+        </div>
       </div>
     </header>
   );
@@ -110,7 +138,10 @@ export function Sidebar({ espacio, nombre }: { espacio: string; nombre: string }
           <p className="pr-1 font-titulo text-3xl leading-tight text-tinta">{espacio}</p>
           <p className="text-xs text-tinta-suave">Hola, {nombre}</p>
         </div>
-        <BotonModo className="-mt-1 shrink-0" />
+        <div className="-mt-1 flex shrink-0 items-center">
+          <BotonModo />
+          <SettingsButton />
+        </div>
       </div>
 
       <Link
@@ -149,7 +180,7 @@ export function Sidebar({ espacio, nombre }: { espacio: string; nombre: string }
   );
 }
 
-/* Los íconos, en línea: son cinco trazos y no justifican una dependencia.
+/* Los íconos, en línea: son unos pocos trazos y no justifican una dependencia.
    La sección activa se marca con color y con `aria-current`, no rellenando el
    dibujo: relleno, un trazo de 1.8 se empasta y queda un borrón. */
 
@@ -205,11 +236,11 @@ function Grafico() {
   );
 }
 
-function Rueda() {
+function Joystick() {
   return (
     <svg viewBox="0 0 24 24" className={base} {...trazo}>
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6" />
+      <path d="M7 7h10a5 5 0 0 1 4.9 6l-.7 3.4a2.3 2.3 0 0 1-4 1L15.5 15.5h-7L6.8 17.4a2.3 2.3 0 0 1-4-1L2.1 13A5 5 0 0 1 7 7z" />
+      <path d="M8 10v3M6.5 11.5h3M15 10.5h.01M17.5 12.5h.01" />
     </svg>
   );
 }

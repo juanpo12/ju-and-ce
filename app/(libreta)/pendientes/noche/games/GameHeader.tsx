@@ -8,7 +8,7 @@ import { Candidates } from '../Candidates';
 import type { Table } from '../types';
 
 /**
- * Above every game: what is at stake, the game's name, the way out, and the
+ * Above every game: what is at stake (if anything), the game's name, the way out, and the
  * white flag. Surrendering asks once more with a second tap, so a slip of the
  * thumb does not hand the night over.
  */
@@ -42,7 +42,7 @@ export function GameHeader({
 
   return (
     <div className="mb-4 flex flex-col gap-3">
-      <Candidates table={table} pending={pending} small />
+      {!table.night.state.casual && <Candidates table={table} pending={pending} small />}
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="font-titulo text-3xl leading-none text-tinta">{name}</p>

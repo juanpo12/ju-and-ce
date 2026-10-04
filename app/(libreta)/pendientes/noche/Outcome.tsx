@@ -16,13 +16,14 @@ import { Candidates } from './Candidates';
 import { personOf, nameOf, type Table } from './types';
 
 /**
- * The ending: the winning movie in the winner's color, or "coincidieron", or
- * "cerró la sesión". If the coin settled it (because they chose it or because
+ * The ending: the winning movie in the winner's color (just the winner, when
+ * they played for fun), or "coincidieron", or "cerró la sesión". If the coin settled it (because they chose it or because
  * the game tied), it is seen falling first.
  */
 export function Outcome({ table, pending }: { table: Table; pending: Pendiente[] }) {
   const router = useRouter();
   const { night, me, other, send, busy } = table;
+  const casual = Boolean(night.state.casual);
   const [clearing, start] = useTransition();
 
   const byCoin = night.game === 'moneda' || Boolean(night.state.tiebreak);
@@ -42,11 +43,11 @@ export function Outcome({ table, pending }: { table: Table; pending: Pendiente[]
         </p>
         <p className="max-w-xs text-sm text-tinta-suave">No pasa nada: se puede abrir otra cuando quieran.</p>
         <div className="mt-2 flex flex-wrap justify-center gap-2">
-          <Boton onClick={() => send(() => createNightAction())} disabled={busy}>
+          <Boton onClick={() => send(() => createNightAction(casual))} disabled={busy}>
             Abrir otra
           </Boton>
-          <BotonLink href="/pendientes" variante="secundario">
-            Volver a pendientes
+          <BotonLink href={casual ? '/' : '/pendientes'} variante="secundario">
+            {casual ? 'Volver a la biblioteca' : 'Volver a pendientes'}
           </BotonLink>
         </div>
       </section>
@@ -105,6 +106,39 @@ export function Outcome({ table, pending }: { table: Table; pending: Pendiente[]
         <p className="max-w-sm text-sm opacity-90">{detail}</p>
       </div>
 
+      {casual ? (
+        <div className="mt-6 flex flex-wrap justify-center gap-2 bg-superficie/15 px-6 py-4">
+          <Boton onClick={() => send(() => createNightAction(true))} disabled={busy} className="bg-superficie text-tinta">
+            Revancha
+          </Boton>
+          <BotonLink href="/" variante="fantasma" className="text-current opacity-85 hover:text-current hover:opacity-100">
+            Volver a la biblioteca
+          </BotonLink>
+        </div>
+      ) : (
+        <MovieOfTheNight table={table} pending={pending} movie={movie} clear={clear} clearing={clearing} />
+      )}
+    </motion.section>
+  );
+}
+
+/** The non-casual ending: what they are watching, and the way to pick again. */
+function MovieOfTheNight({
+  table,
+  pending,
+  movie,
+  clear,
+  clearing,
+}: {
+  table: Table;
+  pending: Pendiente[];
+  movie: Pendiente | null;
+  clear: () => void;
+  clearing: boolean;
+}) {
+  const { night } = table;
+  return (
+    <>
       <div className="flex flex-col items-center gap-3 px-6 py-6">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-85">La de esta noche</p>
         {movie ? (
@@ -131,6 +165,6 @@ export function Outcome({ table, pending }: { table: Table; pending: Pendiente[]
           Elegir otra
         </Boton>
       </div>
-    </motion.section>
+    </>
   );
 }

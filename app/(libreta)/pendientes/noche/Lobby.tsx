@@ -38,6 +38,7 @@ const DESCRIPTION: Record<Game, string> = {
 /**
  * The three phases before playing: waiting for the other person, each one
  * proposing a candidate, and choosing how to settle it if they did not agree.
+ * Just for fun, the middle one is skipped.
  */
 export function Lobby({
   table,
@@ -67,7 +68,9 @@ export function Lobby({
         </span>
         <p className="font-titulo text-3xl leading-tight text-tinta">Esperando a {other.nombre}…</p>
         <p className="max-w-xs text-sm leading-relaxed text-tinta-suave">
-          Cuando abra Pendientes en su celular va a ver que la estás esperando. Pueden seguir cuando entre.
+          {night.state.casual
+            ? 'Cuando abra Jugar en su celular entra directo. Ahí eligen a qué.'
+            : 'Cuando abra Pendientes en su celular va a ver que la estás esperando. Pueden seguir cuando entre.'}
         </p>
         {cancel}
       </section>
@@ -83,11 +86,15 @@ export function Lobby({
     );
   }
 
-  // 'juego': they did not agree, something has to settle it.
+  // 'juego': they did not agree and something has to settle it, or they are
+  // just here to play.
+  const casual = night.state.casual;
   return (
     <>
-      <Candidates table={table} pending={pending} />
-      <p className="mt-5 text-center font-titulo text-3xl leading-tight text-tinta">¿Con qué se define?</p>
+      {!casual && <Candidates table={table} pending={pending} />}
+      <p className={cn('text-center font-titulo text-3xl leading-tight text-tinta', !casual && 'mt-5')}>
+        {casual ? '¿A qué jugamos?' : '¿Con qué se define?'}
+      </p>
       <p className="mb-4 mt-1 text-center text-sm text-tinta-suave">
         El primero que toca elige. Si es por turnos, empieza el otro.
       </p>

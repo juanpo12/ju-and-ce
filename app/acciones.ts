@@ -236,6 +236,9 @@ function playersOf(night: { createdBy: string; state: { present?: string[] } }):
   return [night.createdBy, other];
 }
 
+/** The two screens a session can live on. */
+const NIGHT_PATHS = ['/pendientes/noche', '/jugar'];
+
 async function requirePartner() {
   const perfil = await exigirPerfil();
   if (esDemo) throw new GameError('La sesión de a dos necesita Supabase: en la demo no hay Realtime.');
@@ -264,11 +267,12 @@ export async function clearPickedAction() {
   refrescar('/pendientes/noche');
 }
 
-export async function createNightAction(): Promise<NightResponse> {
+/** With `casual`, a session just for playing: no movie at stake. */
+export async function createNightAction(casual = false): Promise<NightResponse> {
   return withRules(async () => {
     const perfil = await requirePartner();
-    const night = await createNight(perfil.id, perfil.espacioId);
-    refrescar('/pendientes/noche');
+    const night = await createNight(perfil.id, perfil.espacioId, casual);
+    refrescar(...NIGHT_PATHS);
     return night;
   });
 }
@@ -278,7 +282,10 @@ export async function readNightAction(id: string): Promise<PublicNight | null> {
   return findNight(perfil.id, id);
 }
 
-/** The second phone comes in: the session moves on to asking for candidates. */
+/**
+ * The second phone comes in: the session moves on to asking for candidates,
+ * or, just for fun, straight to choosing the game.
+ */
 export async function joinNightAction(id: string): Promise<NightResponse> {
   return withRules(async () => {
     const perfil = await requirePartner();
@@ -287,7 +294,10 @@ export async function joinNightAction(id: string): Promise<NightResponse> {
       if (present.includes(perfil.id)) return { changes: {} };
       if (night.phase !== 'esperando') throw new GameError('Esa sesión ya arrancó sin vos.');
       return {
-        changes: { phase: 'candidatas', state: { ...night.state, present: [...present, perfil.id] } },
+        changes: {
+          phase: night.state.casual ? 'juego' : 'candidatas',
+          state: { ...night.state, present: [...present, perfil.id] },
+        },
       };
     });
   });
@@ -337,7 +347,7 @@ export async function proposeCandidateAction(
       }
       return { changes: { phase: 'juego', state: { ...night.state, candidates } } };
     }).then((night) => {
-      if (night.phase === 'terminada') refrescar('/pendientes/noche');
+      if (night.phase === 'terminada') refrescar(...NIGHT_PATHS);
       return night;
     });
   });
@@ -369,7 +379,7 @@ export async function chooseGameAction(id: string, game: Game): Promise<NightRes
       }
       return { changes: { phase: 'jugando', game, state, secret: start.secret } };
     }).then((night) => {
-      if (night.phase === 'terminada') refrescar('/pendientes/noche');
+      if (night.phase === 'terminada') refrescar(...NIGHT_PATHS);
       return night;
     });
   });
@@ -406,7 +416,7 @@ export async function playAction(id: string, move: Move): Promise<NightResponse>
         picked: entryId,
       };
     }).then((night) => {
-      if (night.phase === 'terminada') refrescar('/pendientes/noche');
+      if (night.phase === 'terminada') refrescar(...NIGHT_PATHS);
       return night;
     });
   });
@@ -431,7 +441,7 @@ export async function surrenderAction(id: string): Promise<NightResponse> {
         picked: entryId,
       };
     }).then((night) => {
-      refrescar('/pendientes/noche');
+      refrescar(...NIGHT_PATHS);
       return night;
     });
   });
@@ -444,7 +454,7 @@ export async function cancelNightAction(id: string): Promise<NightResponse> {
       if (!isLive(night.phase)) return { changes: {} };
       return { changes: { phase: 'cancelada', secret: {}, state: { ...night.state, closedBy: perfil.id } } };
     });
-    refrescar('/pendientes/noche');
+    refrescar(...NIGHT_PATHS);
     return night;
   });
 }

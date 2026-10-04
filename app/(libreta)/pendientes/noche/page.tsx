@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { exigirPerfil } from '@/lib/sesion';
 import { personasDe } from '@/lib/personas';
@@ -41,6 +42,9 @@ export default async function Night({
     duoAvailable ? recentNight(perfil.id) : null,
     duoAvailable ? gameAssets(perfil.id) : null,
   ]);
+
+  // A just-for-fun session has its own screen.
+  if (session?.state.casual) redirect('/jugar');
 
   const header = (
     <header className="mb-5">

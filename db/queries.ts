@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import { and, asc, count, desc, eq, getViewSelectedFields, gt, gte, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, getViewSelectedFields, gt, gte, inArray, isNotNull, isNull, lt, ne, not, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import {
   comoUsuario,
@@ -580,13 +580,19 @@ export async function activeNight(userId: string): Promise<PublicNight | null> {
   });
 }
 
+/** Whether a row is a just-for-fun session. */
+const isCasual = sql`coalesce((${nights.state}->>'casual')::boolean, false)`;
+
 /**
  * What the night screen has to show: the live session, or the one that just
  * ended while its pick is still waiting at the top of Pendientes (so a reload
  * does not wipe the celebration), or one cancelled a moment ago (so the other
  * phone, if it reloads, still sees who closed it).
+ *
+ * With `casual`, the same for the just-for-fun sessions: there is no pick to
+ * wait on, so a finished one stays a few minutes for the rematch.
  */
-export async function recentNight(userId: string): Promise<PublicNight | null> {
+export async function recentNight(userId: string, casual = false): Promise<PublicNight | null> {
   const live = await activeNight(userId);
   if (live) return live;
 
@@ -595,13 +601,20 @@ export async function recentNight(userId: string): Promise<PublicNight | null> {
       .select({ night: nights, pickedAt: entradas.pickedAt })
       .from(nights)
       .leftJoin(entradas, eq(entradas.id, nights.entryId))
-      .where(and(eq(nights.mode, 'duo'), inArray(nights.phase, ['terminada', 'cancelada'])))
+      .where(
+        and(
+          eq(nights.mode, 'duo'),
+          inArray(nights.phase, ['terminada', 'cancelada']),
+          casual ? isCasual : not(isCasual),
+        ),
+      )
       .orderBy(desc(nights.updatedAt))
       .limit(1);
     if (!last) return null;
 
-    const justNow = Date.now() - last.night.updatedAt.getTime() < 2 * 60_000;
-    if (last.night.phase === 'cancelada') return justNow ? toPublic(last.night) : null;
+    const age = Date.now() - last.night.updatedAt.getTime();
+    if (last.night.phase === 'cancelada') return age < 2 * 60_000 ? toPublic(last.night) : null;
+    if (casual) return age < 10 * 60_000 ? toPublic(last.night) : null;
     // Finished: while its pick is still waiting. Letting it go is "pick another".
     return last.pickedAt !== null ? toPublic(last.night) : null;
   });
@@ -619,7 +632,7 @@ export async function findNight(userId: string, id: string): Promise<PublicNight
  * the same time, the partial index makes the second one collide and both end
  * up on the same row.
  */
-export async function createNight(userId: string, spaceId: string): Promise<PublicNight> {
+export async function createNight(userId: string, spaceId: string, casual = false): Promise<PublicNight> {
   return comoUsuario(userId, async (tx) => {
     await tx
       .update(nights)
@@ -633,7 +646,7 @@ export async function createNight(userId: string, spaceId: string): Promise<Publ
         mode: 'duo',
         phase: 'esperando',
         createdBy: userId,
-        state: { present: [userId], candidates: {} },
+        state: casual ? { present: [userId], casual } : { present: [userId], candidates: {} },
       })
       .onConflictDoNothing()
       .returning();
@@ -752,7 +765,7 @@ export async function nightsTally(userId: string): Promise<NightsTally> {
         count: sql<number>`count(*)::int`,
       })
       .from(nights)
-      .where(eq(nights.phase, 'terminada'))
+      .where(and(eq(nights.phase, 'terminada'), not(isCasual)))
       .groupBy(nights.mode, nights.game, nights.winnerId);
 
     const tally: NightsTally = { total: 0, agreed: 0, byDice: 0, byPerson: {}, byGame: {} };
@@ -786,7 +799,7 @@ export async function nightsHistory(userId: string, limit = 6) {
       .from(nights)
       .leftJoin(perfiles, eq(perfiles.id, nights.winnerId))
       .leftJoin(vEntradasPuntuadas, eq(vEntradasPuntuadas.id, nights.entryId))
-      .where(eq(nights.phase, 'terminada'))
+      .where(and(eq(nights.phase, 'terminada'), not(isCasual)))
       .orderBy(desc(nights.finishedAt))
       .limit(limit),
   );

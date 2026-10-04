@@ -395,6 +395,11 @@ export type LibraryEntry = {
 /* ----------------------------- state and secret --------------------------- */
 
 export type NightState = {
+  /**
+   * Just for fun: no candidates and no pick, straight to choosing a game. The
+   * same row and the same rules, so it shares the one-live-session limit.
+   */
+  casual?: boolean;
   /** Who entered the session. */
   present?: string[];
   candidates?: Record<string, Candidate>;
@@ -452,6 +457,10 @@ export type Move =
 export const LIVE_PHASES: Phase[] = ['esperando', 'candidatas', 'juego', 'jugando'];
 
 export const isLive = (phase: Phase) => LIVE_PHASES.includes(phase);
+
+/** Where each kind of session lives. */
+export const sessionPath = (night: Pick<PublicNight, 'state'>) =>
+  night.state.casual ? '/jugar' : '/pendientes/noche';
 
 /** The other one of the two. */
 export const otherOf = (players: [string, string], me: string) =>

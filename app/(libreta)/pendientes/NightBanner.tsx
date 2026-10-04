@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
-import type { PublicNight } from '@/lib/movie-night';
+import { sessionPath, type PublicNight } from '@/lib/movie-night';
 import type { Persona } from '@/lib/personas';
 
 /**
@@ -9,16 +9,19 @@ import type { Persona } from '@/lib/personas';
  */
 export function NightBanner({ session, me, other }: { session: PublicNight; me: Persona; other: Persona }) {
   const openedByOther = session.createdBy === other.id;
+  const casual = session.state.casual;
   const text =
     session.phase === 'esperando' && openedByOther
-      ? `${other.nombre} te está esperando para elegir la de esta noche`
+      ? `${other.nombre} te está esperando para ${casual ? 'jugar' : 'elegir la de esta noche'}`
       : session.phase === 'esperando'
         ? `Esperando a ${other.nombre}…`
-        : 'Hay una noche de peli en curso';
+        : casual
+          ? 'Hay una partida en curso'
+          : 'Hay una noche de peli en curso';
 
   return (
     <Link
-      href="/pendientes/noche"
+      href={sessionPath(session)}
       className="foco tocable mb-5 flex items-center gap-3 rounded-tema border border-acento bg-acento-suave px-4 py-3 text-sm text-tinta shadow-baja"
     >
       <span className="relative flex shrink-0">

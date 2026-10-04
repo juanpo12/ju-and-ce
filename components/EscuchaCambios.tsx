@@ -122,7 +122,9 @@ function reaccionar(cambio: Cambio, yo: Persona, otro: Persona | null) {
 
   if (cambio.table === 'noches') {
     if (cambio.eventType !== 'INSERT' || fila.creada_por !== otro.id || fila.modo !== 'duo') return;
-    avisarConToast(otro, `${otro.nombre} quiere elegir la de esta noche`, 'Entrá desde Pendientes');
+    const casual = (fila.estado as { casual?: boolean } | null)?.casual;
+    if (casual) avisarConToast(otro, `${otro.nombre} quiere jugar`, 'Entrá desde Jugar');
+    else avisarConToast(otro, `${otro.nombre} quiere elegir la de esta noche`, 'Entrá desde Pendientes');
     return;
   }
 
