@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { crearClienteNavegador } from '@/lib/supabase/client';
 import { esDemo } from '@/lib/demo';
-import { joinNightAction, readNightAction } from '@/app/acciones';
-import type { Game, Mode, NightState, Phase, PublicNight } from '@/lib/movie-night';
+import { joinNightAction, playAction, readNightAction } from '@/app/acciones';
+import { isModularGame, type Game, type Mode, type NightState, type Phase, type PublicNight } from '@/lib/movie-night';
 import type { Persona } from '@/lib/personas';
 import type { Pendiente } from '@/db/queries';
 import type { Send, Table } from './types';
@@ -29,6 +29,10 @@ import { Simon } from './games/Simon';
 import { Battleship } from './games/Battleship';
 import { PosterGuess } from './games/PosterGuess';
 import { Timeline } from './games/Timeline';
+import { SCREENS } from './games/registry';
+
+/** How long a finished match stays on screen before the outcome. */
+const LINGER_MS = 2200;
 
 /**
  * The duo session, live. The `noches` row lives here in state: every action
@@ -90,6 +94,18 @@ export function NightSession({
     [adopt],
   );
 
+  // A match that ends while we watch stays on screen a moment longer.
+  const [lingering, setLingering] = useState<string | null>(null);
+  const lastPhase = useRef(night.phase);
+  useEffect(() => {
+    const was = lastPhase.current;
+    lastPhase.current = night.phase;
+    if (was !== 'jugando' || night.phase !== 'terminada' || !night.state.match) return;
+    setLingering(night.id);
+    const id = setTimeout(() => setLingering(null), LINGER_MS);
+    return () => clearTimeout(id);
+  }, [night.phase, night.id, night.state.match]);
+
   // Joining: if the other person opened it and I am not in yet, I join on arrival.
   const joined = useRef<string | null>(null);
   useEffect(() => {
@@ -137,9 +153,17 @@ export function NightSession({
 
   const present = night.state.present ?? [];
   const second = present.find((p) => p !== night.createdBy) ?? (night.createdBy === me.id ? other.id : me.id);
-  const table: Table = { night, me, other, players: [night.createdBy, second], send, busy };
+  const play: Table['play'] = useCallback(
+    (move, options) => send(() => playAction(current.current.id, move), options),
+    [send],
+  );
+  const table: Table = { night, me, other, players: [night.createdBy, second], send, play, busy };
 
-  switch (night.phase) {
+  // A match that ends while we watch stays on screen a moment longer, so the
+  // last move (the final reveal, the winning line) is seen before the outcome.
+  const phase = night.phase === 'terminada' && lingering === night.id ? 'jugando' : night.phase;
+
+  switch (phase) {
     case 'esperando':
     case 'candidatas':
     case 'juego':
@@ -184,8 +208,10 @@ export function NightSession({
           return <PosterGuess table={table} match={match} pending={pending} />;
         case 'linea':
           return <Timeline table={table} match={match} pending={pending} />;
-        default:
-          return null;
+        default: {
+          const screen = isModularGame(match.game) ? SCREENS[match.game] : null;
+          return screen ? <screen.Component table={table} match={match as never} pending={pending} /> : null;
+        }
       }
     }
     case 'terminada':

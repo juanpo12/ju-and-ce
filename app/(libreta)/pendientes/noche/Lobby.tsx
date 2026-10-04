@@ -6,14 +6,15 @@ import { cancelNightAction, chooseGameAction, proposeCandidateAction } from '@/a
 import { Avatar } from '@/components/Avatar';
 import { Boton } from '@/components/Boton';
 import { Poster } from '@/components/Poster';
-import { filterPending, GAME_NAME, GAMES, type DrawFilters, type Game } from '@/lib/movie-night';
+import { filterPending, GAME_NAME, GAMES, isModularGame, type DrawFilters, type Game, type ModularGame } from '@/lib/movie-night';
 import { cn } from '@/lib/utils';
 import type { Pendiente } from '@/db/queries';
 import { Candidates } from './Candidates';
+import { SCREENS } from './games/registry';
 import { FilterChips } from './FilterChips';
 import type { Table } from './types';
 
-const DESCRIPTION: Record<Game, string> = {
+const DESCRIPTION: Record<Exclude<Game, ModularGame>, string> = {
   ppt: 'Al mejor de 3. Cada uno elige en su celular y se revela a la vez.',
   memoria: 'Un tablero con pósters de lo que ya vieron. Por turnos: acertás, seguís.',
   ahorcado: 'Un título de la biblioteca, cada uno lo adivina por su lado. El primero que lo completa gana.',
@@ -112,7 +113,7 @@ export function Lobby({
                 <GameIcon game={game} />
                 <span className="min-w-0 flex-1">
                   <span className="block font-titulo text-2xl leading-none text-tinta">{GAME_NAME[game]}</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-tinta-suave">{reason ?? DESCRIPTION[game]}</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-tinta-suave">{reason ?? (isModularGame(game) ? SCREENS[game].description : DESCRIPTION[game])}</span>
                 </span>
               </button>
             </li>
@@ -236,6 +237,7 @@ function GameIcon({ game }: { game: Game }) {
         strokeLinejoin="round"
         aria-hidden
       >
+        {isModularGame(game) && SCREENS[game].icon}
         {game === 'ppt' && (
           <>
             <path d="M7 11V7.5a1.5 1.5 0 0 1 3 0V11M10 10V5.5a1.5 1.5 0 0 1 3 0V11M13 10.5V6.5a1.5 1.5 0 0 1 3 0V12" />

@@ -1,17 +1,13 @@
-import { randomInt } from 'node:crypto';
-
 /**
  * Randomness comes in through here so the game logic is deterministic in
- * tests: `crypto` in production, a seed in the tests.
+ * tests: `crypto` in production (`secure-random.ts`, server only), a seed in
+ * the tests. This file stays free of Node APIs so game logic can also run in
+ * the browser (the simulator).
  */
 export type Rng = {
   /** An integer in [0, n). */
   int(n: number): number;
 };
-
-export function secureRng(): Rng {
-  return { int: (n) => randomInt(n) };
-}
 
 /** mulberry32: small, fast and good enough to shuffle in a test. */
 export function seededRng(seed: number): Rng {

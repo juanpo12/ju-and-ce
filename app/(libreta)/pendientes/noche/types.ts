@@ -1,5 +1,5 @@
 import type { NightResponse } from '@/app/acciones';
-import type { PublicNight } from '@/lib/movie-night';
+import type { ModularMove, PublicNight } from '@/lib/movie-night';
 import type { Persona } from '@/lib/personas';
 
 /**
@@ -20,6 +20,11 @@ export type Table = {
   /** In session order: the one who opened it first. */
   players: [string, string];
   send: Send;
+  /**
+   * Plays a move of a modular game. Modular screens use this instead of
+   * `send(() => playAction(...))`, so the simulator can run them locally.
+   */
+  play: (move: ModularMove, options?: { quiet?: boolean }) => Promise<string | null>;
   busy: boolean;
 };
 

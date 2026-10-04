@@ -18,6 +18,7 @@ import {
   createNight,
   editarEntrada,
   findNight,
+  nightWithSecret,
   gameAssets,
   guardarAjustes,
   guardarFicha,
@@ -45,8 +46,9 @@ import {
   type Move,
   type PublicNight,
 } from '@/lib/movie-night';
-import { pickOne, secureRng } from '@/lib/games/random';
-import { applyMove, GameError, isValidMove, startMatch, tiebreak } from '@/lib/games';
+import { pickOne } from '@/lib/games/random';
+import { secureRng } from '@/lib/games/secure-random';
+import { applyMove, GameError, isValidMove, privateView, startMatch, tiebreak } from '@/lib/games';
 
 /**
  * Las mutaciones. Todas pasan por `exigirPerfil()` y de ahí a `comoUsuario()`,
@@ -280,6 +282,18 @@ export async function createNightAction(casual = false): Promise<NightResponse> 
 export async function readNightAction(id: string): Promise<PublicNight | null> {
   const perfil = await exigirPerfil();
   return findNight(perfil.id, id);
+}
+
+/**
+ * What only this player may see of the match in play: their own dice, the word
+ * they have to draw. The rest of the secret never leaves the server.
+ */
+export async function privateViewAction(id: string): Promise<unknown> {
+  const perfil = await exigirPerfil();
+  const night = await nightWithSecret(perfil.id, id);
+  if (!night?.state.match || night.phase !== 'jugando') return null;
+  if (!(night.state.present ?? []).includes(perfil.id)) return null;
+  return privateView(night.state.match, night.secret, perfil.id);
 }
 
 /**

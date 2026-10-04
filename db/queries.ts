@@ -620,6 +620,14 @@ export async function recentNight(userId: string, casual = false): Promise<Publi
   });
 }
 
+/** The full row, secret included: only for the server to compute a player's private view. */
+export async function nightWithSecret(userId: string, id: string): Promise<Night | null> {
+  return comoUsuario(userId, async (tx) => {
+    const [row] = await tx.select().from(nights).where(eq(nights.id, id));
+    return row ?? null;
+  });
+}
+
 export async function findNight(userId: string, id: string): Promise<PublicNight | null> {
   return comoUsuario(userId, async (tx) => {
     const [row] = await tx.select().from(nights).where(eq(nights.id, id));

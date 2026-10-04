@@ -267,6 +267,25 @@ Desde Pendientes, «Noche de peli» elige qué ver. Dos modos:
   el otro. Solo la memoria, el ahorcado, la trivia, el póster y la línea de
   tiempo necesitan pelis vistas; el resto no depende de la libreta.
 
+  Y catorce más que no tienen nada que ver con películas: pares o nones, por
+  uno (el que juega uno menos se lleva todo), robar o compartir, subasta,
+  reversi, cinco en línea, mancala, generala, dados mentirosos, duelo del oeste
+  (el primero en disparar después de «¡FUEGO!»), colores (tocar la tinta, no la
+  palabra), anagrama, dibujá y adiviná, y ¿cuánto me conocés?. Se juegan igual
+  desde la noche de peli o desde la pestaña Jugar, sin peli de por medio.
+
+  Esos catorce son **módulos**: cada uno vive en `lib/games/<id>.ts` (reglas,
+  con un `GameModule` de `lib/games/module.ts`), su prueba al lado, y su
+  pantalla en `pendientes/noche/games/`. Para sumar otro: el id en
+  `MODULAR_GAMES` (`lib/movie-night.ts`) con su nombre, el módulo en
+  `lib/games/modules.ts`, la pantalla en `games/registry.tsx`, y
+  `npm run db:generate` (el check de `noches.juego` sale de `GAMES`). Lo que solo
+  puede ver un jugador (sus dados, la palabra a dibujar) sale por
+  `privateView` y la pantalla lo lee con `usePrivateView`.
+
+  Para probarlos sin dos celulares: `/jugar/simulador` (solo en dev y en la
+  demo) corre la lógica en el navegador y deja jugar los dos lugares.
+
 La sesión es una fila de `noches` con el estado como `jsonb`. Toda transición
 pasa por `transitionNight()` en `db/queries.ts`, que lee la fila con
 `for update`, aplica la regla y sube `version`: dos jugadas simultáneas se

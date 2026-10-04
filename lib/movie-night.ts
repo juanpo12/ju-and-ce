@@ -12,9 +12,23 @@ import type { Night, Tipo } from '@/db/schema';
 /** The same values as the checks on `noches` in the database. */
 export const NIGHT_MODES = ['individual', 'duo'] as const;
 export const NIGHT_PHASES = ['esperando', 'candidatas', 'juego', 'jugando', 'terminada', 'cancelada'] as const;
+/**
+ * Games added through the module registry (`lib/games/modules.ts`): each one
+ * lives in its own files (logic, tests, screen) instead of being spread across
+ * the shared switches below.
+ */
+export const MODULAR_GAMES = [
+  'pares', 'poruno', 'robar', 'subasta',
+  'reversi', 'cinco', 'mancala',
+  'generala', 'mentiroso',
+  'duelo', 'colores', 'anagrama',
+  'dibujo', 'conocer',
+] as const;
+
 export const GAMES = [
   'ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor',
   'cuatro', 'nim', 'cajas', 'carta', 'taps', 'numero', 'simon', 'naval', 'poster', 'linea',
+  ...MODULAR_GAMES,
   'moneda',
 ] as const;
 
@@ -31,6 +45,9 @@ export type Mode = (typeof NIGHT_MODES)[number];
 export type Phase = (typeof NIGHT_PHASES)[number];
 
 export type Game = (typeof GAMES)[number];
+export type ModularGame = (typeof MODULAR_GAMES)[number];
+
+export const isModularGame = (g: string): g is ModularGame => (MODULAR_GAMES as readonly string[]).includes(g);
 
 export const GAME_NAME: Record<Game, string> = {
   ppt: 'Piedra, papel o tijera',
@@ -51,6 +68,20 @@ export const GAME_NAME: Record<Game, string> = {
   naval: 'Batalla naval',
   poster: 'Adiviná el póster',
   linea: 'Línea de tiempo',
+  pares: 'Pares o nones',
+  poruno: 'Por uno',
+  robar: 'Robar o compartir',
+  subasta: 'Subasta',
+  reversi: 'Reversi',
+  cinco: 'Cinco en línea',
+  mancala: 'Mancala',
+  generala: 'Generala',
+  mentiroso: 'Dados mentirosos',
+  duelo: 'Duelo del oeste',
+  colores: 'Colores',
+  anagrama: 'Anagrama',
+  dibujo: 'Dibujá y adiviná',
+  conocer: '¿Cuánto me conocés?',
   moneda: 'Moneda',
 };
 
@@ -74,6 +105,20 @@ export const AT_GAME: Record<Game, string> = {
   naval: 'a la batalla naval',
   poster: 'a adivinar el póster',
   linea: 'a la línea de tiempo',
+  pares: 'a pares o nones',
+  poruno: 'a por uno',
+  robar: 'a robar o compartir',
+  subasta: 'a la subasta',
+  reversi: 'al reversi',
+  cinco: 'al cinco en línea',
+  mancala: 'al mancala',
+  generala: 'a la generala',
+  mentiroso: 'a los dados mentirosos',
+  duelo: 'al duelo del oeste',
+  colores: 'a los colores',
+  anagrama: 'al anagrama',
+  dibujo: 'a dibujá y adiviná',
+  conocer: 'a cuánto me conocés',
   moneda: 'a la moneda',
 };
 
@@ -377,7 +422,14 @@ export type Match =
   | BattleshipMatch
   | PosterGuessMatch
   | TimelineMatch
-  | CoinMatch;
+  | CoinMatch
+  | ModularMatch;
+
+/**
+ * A match of a modular game. The real shape is defined next to its logic in
+ * `lib/games/<game>.ts`; its screen narrows it with that type.
+ */
+export type ModularMatch = { game: ModularGame } & Record<string, unknown>;
 
 /** A watched movie with everything the trivia can ask about. */
 export type LibraryEntry = {
@@ -425,6 +477,8 @@ export type NightSecret = {
   battleship?: { fleets: Record<string, number[][]> };
   poster?: { title: string };
   timeline?: { correct: number[]; years: number[] };
+  /** The current modular game's secret, shaped by its module. */
+  modular?: unknown;
 };
 
 /** The row without the secret: the only thing that travels to the browser. */
@@ -450,7 +504,11 @@ export type Move =
   | { game: 'simon'; input: number[] }
   | { game: 'naval'; cell: number }
   | { game: 'poster'; guess: string }
-  | { game: 'linea'; order: number[] };
+  | { game: 'linea'; order: number[] }
+  | ModularMove;
+
+/** A move of a modular game; its module's `isValidMove` checks the shape. */
+export type ModularMove = { game: ModularGame } & Record<string, unknown>;
 
 /* -------------------------------- helpers -------------------------------- */
 

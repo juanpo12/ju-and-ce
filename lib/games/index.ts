@@ -1,4 +1,5 @@
-import type { Card, Game, LibraryEntry, Match, Move, NightSecret } from '@/lib/movie-night';
+import { isModularGame, type Card, type Game, type LibraryEntry, type Match, type Move, type NightSecret } from '@/lib/movie-night';
+import { MODULES } from './modules';
 import { pickOne, type Rng } from './random';
 import { GameError } from './error';
 import { startRps, applyRps } from './rps';
@@ -38,7 +39,8 @@ export type MatchContext = {
 export type Availability = Pick<MatchContext, 'cards' | 'titles' | 'library'>;
 
 /** Why a game cannot be played today (a message for the UI), or null if it can. */
-export function whyUnavailable(game: Game, ctx: Availability) {
+export function whyUnavailable(game: Game, ctx: Availability): string | null {
+  if (isModularGame(game)) return MODULES[game].whyUnavailable?.(ctx) ?? null;
   if (game === 'memoria' && ctx.cards.length < MIN_MEMORY_CARDS) {
     return `Hacen falta ${MIN_MEMORY_CARDS} pelis vistas para armar el tablero.`;
   }
@@ -62,6 +64,11 @@ export type MatchStart = { match: Match; secret: NightSecret; end?: { winnerId: 
 export function startMatch(game: Game, ctx: MatchContext, rng: Rng, now = Date.now()): MatchStart {
   const reason = whyUnavailable(game, ctx);
   if (reason) throw new GameError(reason);
+
+  if (isModularGame(game)) {
+    const r = MODULES[game].start(ctx, rng, now);
+    return { match: r.match, secret: { modular: r.secret }, end: r.end };
+  }
 
   switch (game) {
     case 'ppt':
@@ -143,8 +150,14 @@ export function applyMove(
   move: Move,
   players: [string, string],
   rng: Rng,
+  now = Date.now(),
 ): MoveResult {
   if (move.game !== match.game) throw new GameError('Esa jugada no es de este juego.');
+
+  if (isModularGame(match.game)) {
+    const r = MODULES[match.game].apply({ match, secret: secret.modular ?? null, me, move, players, rng, now });
+    return { match: r.match, secret: { ...secret, modular: r.secret }, end: r.end };
+  }
 
   switch (match.game) {
     case 'ppt': {
@@ -263,6 +276,12 @@ export function applyMove(
   throw new GameError('Esa jugada no es de este juego.');
 }
 
+/** What only `me` may see of the current modular match (their dice, the word to draw), or null. */
+export function privateView(match: Match, secret: NightSecret, me: string): unknown {
+  if (!isModularGame(match.game)) return null;
+  return MODULES[match.game].privateView?.({ match, secret: secret.modular ?? null, me }) ?? null;
+}
+
 /** When the game tied: heads or tails. */
 export function tiebreak(players: [string, string], rng: Rng) {
   return pickOne(players, rng);
@@ -276,6 +295,7 @@ const isIntList = (v: unknown, max = 64): v is number[] =>
 export function isValidMove(x: unknown): x is Move {
   if (!x || typeof x !== 'object') return false;
   const o = x as Record<string, unknown>;
+  if (typeof o.game === 'string' && isModularGame(o.game)) return MODULES[o.game].isValidMove(o);
   switch (o.game) {
     case 'ppt':
       return o.throw === 'rock' || o.throw === 'paper' || o.throw === 'scissors';

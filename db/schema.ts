@@ -269,7 +269,8 @@ export const nights = pgTable('noches', {
   ),
   check(
     'noches_juego_valido',
-    sql`${t.game} is null or ${t.game} in ('ppt', 'memoria', 'ahorcado', 'wordle', 'tateti', 'dados', 'trivia', 'mayormenor', 'cuatro', 'nim', 'cajas', 'carta', 'taps', 'numero', 'simon', 'naval', 'poster', 'linea', 'moneda')`,
+    // Built from `GAMES`: after adding a game, `npm run db:generate` writes the migration.
+    sql`${t.game} is null or ${t.game} in (${sql.raw(GAMES.map((g) => `'${g}'`).join(', '))})`,
   ),
   // One live session per space. This is what makes it safe for both to tap
   // "De a dos" at the same time: the second insert collides and keeps the first.
