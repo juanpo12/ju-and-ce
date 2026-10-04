@@ -17,7 +17,10 @@
     "iconos": "tsx scripts/iconos.ts",
     "demo": "tsx db/demo.ts",
     "games:test": "tsx --test lib/games/*.test.ts",
-    "words": "tsx scripts/words.ts"
+    "words": "tsx scripts/words.ts",
+    "themes:test": "tsx scripts/theme-check.ts",
+    "themes:index": "tsx scripts/theme-index.ts",
+    "themes:art": "tsx scripts/theme-art.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

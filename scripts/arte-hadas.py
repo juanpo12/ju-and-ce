@@ -1,6 +1,5 @@
 """
-Genera las texturas de los tres temas ilustrados (hongo, mariposas, campanitas)
-y las escribe en `styles/temas.css`, reemplazando su sección.
+Genera las texturas de los tres temas ilustrados (hongo, mariposas, campanitas).
 
     python3 scripts/arte-hadas.py
 
@@ -8,12 +7,21 @@ Cada pieza (hada, mariposa, hongo, campanitas, lavanda, helecho, luna) se
 dibuja en su propio sistema de coordenadas y se ubica con g(transform). Los
 colores del dibujo van escritos en el SVG porque un data URI no ve las
 variables CSS: por eso hay una paleta por modo.
+
+Output: each SVG goes to `public/textures/<theme>-<hash>.svg` (the content hash
+in the name lets browsers cache it forever) and each theme's CSS to
+`styles/themes/<theme>.ts`.
 """
-import math, pathlib, re, urllib.parse
+import hashlib, math, pathlib, re
+
+TEXTURES = pathlib.Path('public/textures')
+CURRENT = None  # the theme being drawn, for the file name
 
 def uri(svg):
     svg = re.sub(r'\s+', ' ', svg).strip()
-    return 'url("data:image/svg+xml,' + urllib.parse.quote(svg, safe=" =:/'(),.-;") + '")'
+    name = f"{CURRENT}-{hashlib.sha256(svg.encode()).hexdigest()[:10]}.svg"
+    (TEXTURES / name).write_text(svg)
+    return f"url('/textures/{name}')"
 
 def g(t, *hijos):
     return f"<g transform='{t}'>{''.join(hijos)}</g>"
@@ -279,6 +287,8 @@ CAMPANITAS = {
 }
 
 def bloque(nombre, marcos, trama, pal, modo, o_marco, o_trama):
+    global CURRENT
+    CURRENT = nombre
     der, izq, arriba = marcos(pal[modo], o_marco)
     return f"""  --textura:
     {der},
@@ -294,16 +304,15 @@ POS = """  /* El marco va pegado a las esquinas de la pantalla, como en los dibu
   --textura-posicion: right bottom var(--sobre-tab-bar), left bottom var(--sobre-tab-bar), right top var(--bajo-cabecera), 0 0;
   --textura-repetir: no-repeat, no-repeat, no-repeat, repeat;"""
 
-css = f"""
-/* ---------------------------------------------------------------------------
-   Los tres ilustrados: hadas, hongos y mariposas dibujados en SVG. Las piezas
-   están en `scripts/arte-hadas.py`, que genera estas texturas — editar ahí y
-   regenerar, no a mano. Cuatro capas: tres esquinas fijas y el polvo del fondo
-   que se repite. Las tarjetas son opacas, así que el dibujo se ve en los
-   márgenes y en los huecos, nunca detrás de un texto.
---------------------------------------------------------------------------- */
+# One file per theme. Old SVGs go first: with the hash in the name, a drawing
+# that changed would otherwise leave the previous file orphaned.
+for theme in ('hongo', 'mariposas', 'campanitas'):
+    for old in TEXTURES.glob(f'{theme}-*.svg'):
+        old.unlink()
+TEXTURES.mkdir(parents=True, exist_ok=True)
 
-[data-tema='hongo'] {{
+css = f"""
+html[data-tema='hongo'] {{
   /* El hada sentada en un hongo lila, entre helechos y lavanda. */
   --fondo: #f2ecf3;
   --superficie: #fdfafd;
@@ -322,6 +331,12 @@ css = f"""
   --sobre-persona: #ffffff;
 
   --tipo-cita: var(--font-lora), Georgia, serif;
+  --tipo-titulo: var(--font-chewy), cursive;
+  --tipo-cartel: var(--font-chewy), cursive;
+  --titulo-peso: 400;
+  --borde-ancho: 2px;
+  --borde-estilo: dotted;
+  --cartel-escala: 0.72;
 
 {bloque('hongo', hongo_marcos, hongo_trama, HONGO, 'claro', .9, .55)}
   --trama: 300px 300px;
@@ -331,7 +346,7 @@ css = f"""
   --sombra-alta: 0 2px 4px rgb(60 30 70 / 0.06), 0 14px 32px -10px rgb(60 30 70 / 0.26);
 }}
 
-.dark[data-tema='hongo'] {{
+html.dark[data-tema='hongo'] {{
   --fondo: #16121a;
   --superficie: #201a26;
   --superficie-alta: #29222f;
@@ -350,7 +365,7 @@ css = f"""
 {bloque('hongo', hongo_marcos, hongo_trama, HONGO, 'oscuro', .6, .5)}
 }}
 
-[data-tema='mariposas'] {{
+html[data-tema='mariposas'] {{
   /* Un hada volando con su estela de polvo, y mariposas por toda la hoja. */
   --fondo: #edf2f8;
   --superficie: #fbfcfe;
@@ -369,6 +384,11 @@ css = f"""
   --sobre-persona: #ffffff;
 
   --tipo-cita: var(--font-lora), Georgia, serif;
+  --tipo-titulo: var(--font-comfortaa), sans-serif;
+  --tipo-cartel: var(--font-comfortaa), sans-serif;
+  --titulo-peso: 700;
+  --titulo-espaciado: 0.03em;
+  --cartel-escala: 0.54;
 
 {bloque('mariposas', mariposas_marcos, mariposas_trama, MARIPOSAS, 'claro', .9, .45)}
   --trama: 320px 320px;
@@ -378,7 +398,7 @@ css = f"""
   --sombra-alta: 0 2px 4px rgb(30 40 80 / 0.05), 0 14px 32px -10px rgb(30 40 80 / 0.22);
 }}
 
-.dark[data-tema='mariposas'] {{
+html.dark[data-tema='mariposas'] {{
   --fondo: #11141c;
   --superficie: #1a1e29;
   --superficie-alta: #232836;
@@ -397,7 +417,7 @@ css = f"""
 {bloque('mariposas', mariposas_marcos, mariposas_trama, MARIPOSAS, 'oscuro', .6, .4)}
 }}
 
-[data-tema='campanitas'] {{
+html[data-tema='campanitas'] {{
   /* Lirios del valle altos como árboles para dos hadas: una en un hongo, otra
      volando entre las flores. */
   --fondo: #e9f3f1;
@@ -417,6 +437,11 @@ css = f"""
   --sobre-persona: #ffffff;
 
   --tipo-cita: var(--font-lora), Georgia, serif;
+  --tipo-titulo: var(--font-mali), cursive;
+  --tipo-cartel: var(--font-mali), cursive;
+  --titulo-peso: 700;
+  --borde-ancho: 2px;
+  --cartel-escala: 0.62;
 
 {bloque('campanitas', campanitas_marcos, campanitas_trama, CAMPANITAS, 'claro', .9, .55)}
   --trama: 280px 280px;
@@ -426,7 +451,7 @@ css = f"""
   --sombra-alta: 0 2px 4px rgb(20 60 55 / 0.06), 0 14px 32px -10px rgb(20 60 55 / 0.24);
 }}
 
-.dark[data-tema='campanitas'] {{
+html.dark[data-tema='campanitas'] {{
   --fondo: #0f1817;
   --superficie: #172321;
   --superficie-alta: #1f2d2b;
@@ -446,26 +471,8 @@ css = f"""
 }}
 """
 
-p = pathlib.Path('styles/temas.css'); s = p.read_text()
-fin = s.index("/* En oscuro las capas se marcan con luminosidad")
-if 'Los tres ilustrados' in s:
-    ini = s.rindex('/*', 0, s.index('Los tres ilustrados'))
-else:
-    ini = fin
-s = s[:ini] + css.lstrip('\n') + '\n' + s[fin:]
-viejo = """    background-image: var(--textura);
-    background-size: var(--textura-tamano);
-    background-attachment: fixed;"""
-nuevo = """    background-image: var(--textura);
-    background-size: var(--textura-tamano);
-    /* Con fallback y no en `:root`: el bloque compartido de `:root` va después
-       de los temas y les pisaría el valor. Solo los ilustrados los definen. */
-    background-position: var(--textura-posicion, 0 0);
-    background-repeat: var(--textura-repetir, repeat);
-    background-attachment: fixed;"""
-if viejo in s:
-    s = s.replace(viejo, nuevo)
-s = s.replace("(papel, bullet, menta y los cuatro de hadas)", "(papel, bullet, menta y los de hadas)")
-s = s.replace("Siete por dos, catorce paletas.", "Diez por dos, veinte paletas.")
-s = s.replace("en las catorce.", "en las veinte.").replace("verse en los catorce,", "verse en los veinte,")
-p.write_text(s)
+# The f-string above already wrote the SVGs. Now the CSS, split by theme.
+for theme in ('hongo', 'mariposas', 'campanitas'):
+    start = css.index(f"html[data-tema='{theme}']")
+    end = css.index('}', css.index(f"html.dark[data-tema='{theme}']")) + 1
+    pathlib.Path(f'styles/themes/{theme}.ts').write_text(f"export default /* css */ `\n{css[start:end]}\n`;\n")

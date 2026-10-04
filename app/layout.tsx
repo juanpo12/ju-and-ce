@@ -1,40 +1,63 @@
 import type { Metadata, Viewport } from 'next';
 import {
   Alfa_Slab_One,
+  Almendra,
   Amatic_SC,
   Anton,
+  Audiowide,
   Baloo_2,
+  Bangers,
   Bebas_Neue,
   Bungee,
+  Bungee_Shade,
   Cabin_Sketch,
   Caveat,
   Caveat_Brush,
+  Chakra_Petch,
   Chewy,
   Cinzel,
+  Cinzel_Decorative,
+  Coiny,
   Comfortaa,
   Cormorant_Garamond,
+  Creepster,
   Dancing_Script,
   Figtree,
   Fredoka,
   Great_Vibes,
+  Grenze_Gotisch,
   IM_Fell_English,
+  Jacquard_12,
+  Lilita_One,
   Limelight,
   Lobster,
   Lora,
   Mali,
   MedievalSharp,
+  Metal_Mania,
   Metamorphous,
+  Monoton,
+  New_Rocker,
   Orbitron,
   Oswald,
   Pacifico,
   Patrick_Hand,
   Pirata_One,
+  Pixelify_Sans,
   Playfair_Display,
+  Press_Start_2P,
   Righteous,
+  Rye,
+  Shojumaru,
+  Silkscreen,
+  Sniglet,
+  Special_Elite,
   Uncial_Antiqua,
+  VT323,
 } from 'next/font/google';
 import { perfilActual } from '@/lib/sesion';
 import { PALETAS, temaValido } from '@/lib/temas';
+import { themeCss } from '@/styles/themes';
 import { Proveedores } from '@/components/Proveedores';
 import '@/styles/temas.css';
 
@@ -115,6 +138,32 @@ const playfair = Playfair_Display({ subsets: ['latin'], display: 'swap', preload
 const baloo = Baloo_2({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-baloo' });
 const orbitron = Orbitron({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-orbitron' });
 
+// Fonts for the pixel art, dragon, space, anime and surprise themes. Like the
+// others, no preload: each one downloads only with its theme. No Japanese
+// fonts: each brings over a hundred @font-face rules, and that CSS everyone pays.
+const pressStart = Press_Start_2P({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-press-start' });
+const vt323 = VT323({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-vt323' });
+const pixelify = Pixelify_Sans({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-pixelify' });
+const silkscreen = Silkscreen({ subsets: ['latin'], weight: ['400', '700'], display: 'swap', preload: false, variable: '--font-silkscreen' });
+const jacquard = Jacquard_12({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-jacquard' });
+const almendra = Almendra({ subsets: ['latin'], weight: ['400', '700'], display: 'swap', preload: false, variable: '--font-almendra' });
+const grenze = Grenze_Gotisch({ subsets: ['latin'], display: 'swap', preload: false, variable: '--font-grenze' });
+const cinzelDeco = Cinzel_Decorative({ subsets: ['latin'], weight: '700', display: 'swap', preload: false, variable: '--font-cinzel-deco' });
+const newRocker = New_Rocker({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-new-rocker' });
+const metalMania = Metal_Mania({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-metal-mania' });
+const audiowide = Audiowide({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-audiowide' });
+const chakra = Chakra_Petch({ subsets: ['latin'], weight: ['500', '700'], display: 'swap', preload: false, variable: '--font-chakra' });
+const specialElite = Special_Elite({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-special-elite' });
+const monoton = Monoton({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-monoton' });
+const coiny = Coiny({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-coiny' });
+const lilita = Lilita_One({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-lilita' });
+const sniglet = Sniglet({ subsets: ['latin'], weight: '800', display: 'swap', preload: false, variable: '--font-sniglet' });
+const bungeeShade = Bungee_Shade({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-bungee-shade' });
+const shojumaru = Shojumaru({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-shojumaru' });
+const bangers = Bangers({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-bangers' });
+const creepster = Creepster({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-creepster' });
+const rye = Rye({ subsets: ['latin'], weight: '400', display: 'swap', preload: false, variable: '--font-rye' });
+
 export const metadata: Metadata = {
   title: 'Nuestra libreta',
   description: 'Las películas que vimos juntos.',
@@ -157,8 +206,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang="es-AR"
       data-tema={tema}
       suppressHydrationWarning
-      className={`${caveat.variable} ${bebas.variable} ${figtree.variable} ${lora.variable} ${cinzel.variable} ${fell.variable} ${sharp.variable} ${pirata.variable} ${uncial.variable} ${patrick.variable} ${fredoka.variable} ${caveatBrush.variable} ${oswald.variable} ${cabinSketch.variable} ${righteous.variable} ${lobster.variable} ${alfa.variable} ${dancing.variable} ${cormorant.variable} ${greatVibes.variable} ${amatic.variable} ${metamorphous.variable} ${chewy.variable} ${comfortaa.variable} ${mali.variable} ${limelight.variable} ${anton.variable} ${bungee.variable} ${pacifico.variable} ${playfair.variable} ${baloo.variable} ${orbitron.variable}`}
+      className={`${caveat.variable} ${bebas.variable} ${figtree.variable} ${lora.variable} ${cinzel.variable} ${fell.variable} ${sharp.variable} ${pirata.variable} ${uncial.variable} ${patrick.variable} ${fredoka.variable} ${caveatBrush.variable} ${oswald.variable} ${cabinSketch.variable} ${righteous.variable} ${lobster.variable} ${alfa.variable} ${dancing.variable} ${cormorant.variable} ${greatVibes.variable} ${amatic.variable} ${metamorphous.variable} ${chewy.variable} ${comfortaa.variable} ${mali.variable} ${limelight.variable} ${anton.variable} ${bungee.variable} ${pacifico.variable} ${playfair.variable} ${baloo.variable} ${orbitron.variable} ${pressStart.variable} ${vt323.variable} ${pixelify.variable} ${silkscreen.variable} ${jacquard.variable} ${almendra.variable} ${grenze.variable} ${cinzelDeco.variable} ${newRocker.variable} ${metalMania.variable} ${audiowide.variable} ${chakra.variable} ${specialElite.variable} ${monoton.variable} ${coiny.variable} ${lilita.variable} ${sniglet.variable} ${bungeeShade.variable} ${shojumaru.variable} ${bangers.variable} ${creepster.variable} ${rye.variable}`}
     >
+      <head>
+        {/* Only the active theme, inlined: no extra request blocking the first
+            paint, and none of the other sixty downloaded. Ajustes fetches the
+            one being previewed from `/theme-css`. */}
+        <style data-theme-css={tema} dangerouslySetInnerHTML={{ __html: themeCss(tema) }} />
+      </head>
       <body className="antialiased">
         <Proveedores tema={tema}>{children}</Proveedores>
       </body>

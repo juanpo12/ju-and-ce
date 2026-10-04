@@ -7,6 +7,22 @@ import { accionGuardarAjustes } from '@/app/acciones';
 import { GRUPOS, PALETAS, TEMAS, temaValido, type Tema } from '@/lib/temas';
 import { cn } from '@/lib/utils';
 
+/**
+ * Fetches a theme's CSS unless the page already has it: the active theme came
+ * inlined with the HTML, and previewed ones stay.
+ */
+function loadThemeCss(theme: Tema): Promise<void> {
+  if (theme === 'papel' || document.querySelector(`[data-theme-css="${theme}"]`)) return Promise.resolve();
+  return new Promise((done) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `/theme-css/${theme}.css`;
+    link.dataset.themeCss = theme;
+    link.onload = link.onerror = () => done();
+    document.head.appendChild(link);
+  });
+}
+
 export function FormularioAjustes({ nombre, tema }: { nombre: string; tema: string }) {
   const [elegido, setElegido] = useState<Tema>(temaValido(tema));
   const [pendiente, empezar] = useTransition();
@@ -18,8 +34,17 @@ export function FormularioAjustes({ nombre, tema }: { nombre: string; tema: stri
   // El tema se prueba en vivo: elegir una muestra pinta la app entera, que es la
   // única forma de saber si gusta. Hasta que no se guarda, es un ensayo: al
   // salir de la pantalla vuelve el de siempre.
+  //
+  // Each theme's CSS downloads only when its swatch is tapped, and `data-tema`
+  // changes once it arrived: switching earlier would flash a half-styled page.
   useEffect(() => {
-    document.documentElement.dataset.tema = elegido;
+    let current = true;
+    void loadThemeCss(elegido).then(() => {
+      if (current) document.documentElement.dataset.tema = elegido;
+    });
+    return () => {
+      current = false;
+    };
   }, [elegido]);
   useEffect(() => {
     return () => {

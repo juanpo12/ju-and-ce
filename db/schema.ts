@@ -31,6 +31,7 @@ import {
   type NightState,
   type Phase,
 } from '../lib/movie-night';
+import { TEMAS } from '../lib/temas';
 
 export { GAMES, NIGHT_MODES, NIGHT_PHASES };
 import { sql } from 'drizzle-orm';
@@ -73,7 +74,8 @@ export const perfiles = pgTable('perfiles', {
   color: text('color').notNull().default('terracota'),
   tema: text('tema').notNull().default('papel'),
 }, (t) => [
-  check('perfiles_tema_valido', sql`${t.tema} in ('papel', 'bullet', 'menta', 'tinta', 'pizarra', 'mostaza', 'cacao', 'hadas', 'pradera', 'acuarela', 'dragon', 'hongo', 'mariposas', 'campanitas', 'cine', 'videoclub', 'marea', 'atardecer', 'frutilla', 'galaxia', 'pergamino', 'castillo', 'vitral', 'taberna', 'heraldica', 'druidas', 'alquimia')`),
+  // Built from `TEMAS`: after adding a theme, `npm run db:generate` writes the migration.
+  check('perfiles_tema_valido', sql`${t.tema} in (${sql.raw(TEMAS.map((x) => `'${x}'`).join(', '))})`),
   index('perfiles_espacio_idx').on(t.espacioId),
   // Los dos se ven entre si: la biblioteca necesita el nombre y el color del otro.
   pgPolicy('perfiles_lectura', {

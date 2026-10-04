@@ -82,7 +82,7 @@ export function TarjetaPeli({
         </div>
       </ViewTransition>
 
-      <div className="flex flex-col gap-1 px-0.5">
+      <div className="legible flex flex-col gap-1 px-0.5">
         <h3 className="line-clamp-2 font-titulo text-xl leading-[1.05] text-tinta">
           {entrada.titulo}
         </h3>

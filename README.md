@@ -109,6 +109,7 @@ app/
     peli/[id]/            Ficha
     agregar/ pendientes/ resumen/ ajustes/
     pendientes/noche/     la noche de peli: el dado, la sesión de a dos y los juegos
+    jugar/                los mismos juegos sin peli de por medio
 components/               Estrellas, Poster, TarjetaPeli, Nav, Boton, Vacio
 db/
   schema.ts               las tablas, las políticas RLS y las vistas
@@ -122,7 +123,9 @@ lib/
   tmdb.ts                 el cliente de TMDB, solo servidor
   movie-night.ts          los tipos y la máquina de estados de la noche de peli
   games/                  la lógica pura de cada juego, con sus pruebas
-styles/temas.css          los temas como variables CSS
+styles/temas.css          «papel» y todo lo que comparten los temas
+styles/themes/            un archivo por tema, más el registro que usa el servidor
+scripts/art/              los dibujos de los temas, en SVG generado
 proxy.ts                  refresco de sesión y guardia de rutas
 db/demo.ts                el Postgres de juguete de `npm run demo`
 lib/demo.ts               el interruptor del modo demo
@@ -134,46 +137,50 @@ una decisión nuestra, y hay mucho tutorial desactualizado dando vueltas.
 
 ### Los temas
 
-Diez, y no son modos oscuros: cada uno cambia fondo, tipografía, radios, acento,
-textura y hasta los colores con que se distingue a cada persona.
+Sesenta y cuatro, en nueve grupos, y no son modos oscuros: cada uno cambia
+fondo, tipografía, radios, bordes, sombras, acento, ilustraciones y hasta los
+colores con que se distingue a cada persona. Cada tema tiene su versión clara y
+su versión oscura.
 
-| | Papel y washi | Bullet journal | Menta granizada |
-| --- | --- | --- | --- |
-| Fondo | beige con renglones | blanco con grilla de puntos | menta con chips de cacao |
-| Acento | terracota | violeta | verde profundo |
-| Texto | Lora | Quicksand | Quicksand |
-| Radio | 0,75 rem | 1 rem | 0,875 rem |
-
-Y cuatro de hadas, uno por cada imagen de inspiración de Ceci:
-
-| | Jardín de hadas | Pradera de luz | Acuarela y estrellas | Guarida del dragón |
-| --- | --- | --- | --- | --- |
-| Fondo | pergamino salvia con destellos dorados | verde luminoso con bokeh | papel con grano y estrellas amarillas | crema durazno, estrellas y luna |
-| Acento | lavanda | rosa | verde salvia | orquídea |
-| Texto | Lora | Figtree | Lora | Lora |
-| Radio | 1,125 rem | 1,25 rem | 0,875 rem | 0,75 rem |
-
-Y tres ilustrados, con hadas, hongos y mariposas dibujados en SVG que enmarcan
-la pantalla desde las esquinas: **Hada del hongo** (lila), **Vuelo de mariposas**
-(celeste) y **Campanitas** (agua). Los dibujos salen de `scripts/arte-hadas.py`,
-que reescribe su sección de `styles/temas.css`: se retocan ahí, no en el CSS.
+| Grupo | Temas |
+| --- | --- |
+| Cuadernos | Papel y washi, Bullet journal, Menta granizada, Tinta china, Pizarra, Mostaza y oliva, Chocolate caliente |
+| De hadas | Jardín de hadas, Pradera de luz, Acuarela y estrellas, Guarida del dragón, Hada del hongo, Vuelo de mariposas, Campanitas |
+| Salidas | Sala de cine, Videoclub, Marea, Atardecer, Frutilla y crema, Galaxia |
+| Medievales | Pergamino, Castillo, Vitral, Taberna, Heráldica, Bosque de druidas, Alquimia |
+| Pixel art | Arcade, Bolsillo verde, Aventura 16 bits, Mazmorra, Plataformas, Mundo de bloques, Ciudad 8 bits, Reino pixel |
+| Dragones y reinos | Dragón de fuego, Dragón de hielo, Wyvern esmeralda, Tesoro del dragón, Mapa del reino, Torneo, Grimorio, Forja enana |
+| Aliens y espacio | Invasión, Archivo clasificado, Planeta rojo, Nebulosa, Abducción, Estación orbital |
+| Anime | Sakura, Shōnen, Manga, Chica mágica, Mecha, Neo Tokio, Espíritus del bosque, Samurái |
+| Sorpresas | Vaporwave, Terminal, Dinosaurios, Piratas, Cómic, Noche de brujas, Lejano oeste |
 
 Se guardan en `perfiles.tema`, no en el navegador, así cada uno tiene el suyo en
 cualquier dispositivo. El `data-tema` lo escribe el layout del servidor en el
 primer render: aplicarlo con JavaScript después de montar haría ver un flash del
 tema equivocado.
 
-Para agregar otro hay que tocar cuatro lugares, y el orden importa porque
-el primero es el que manda:
+**Que sean muchos no hace más lenta la app.** Cada tema vive en su propio
+archivo, `styles/themes/<id>.ts`, y el layout mete en el HTML solo el CSS del
+tema activo (unos 2 KB). Las ilustraciones son SVG sueltos en `public/textures/`
+con un hash en el nombre: se bajan solo las del tema en uso y quedan en caché
+para siempre. Las letras de cada tema se declaran con `next/font` sin precarga,
+así que también baja solo la que se usa. Ninguna letra japonesa: cada una trae
+más de cien `@font-face`, y ese CSS lo pagaría todo el mundo. Ajustes trae el CSS
+de los otros temas recién cuando se los toca para probarlos (`/theme-css/<id>.css`).
 
-1. `db/schema.ts` — sumarlo al check `perfiles_tema_valido` y generar la
-   migración. La base es la que decide qué temas existen.
-2. `styles/temas.css` — el bloque `[data-tema='...']` con todos los tokens.
-3. `app/acciones.ts` — la constante `TEMAS`, que valida lo que llega del form.
-4. `app/(libreta)/ajustes/FormularioAjustes.tsx` — la opción y sus tres muestras
-   de color, la única excepción a «ningún componente escribe un hex a mano».
+Para agregar uno:
 
-Y el `COLOR_DE_FONDO` de `app/layout.tsx`, para la barra del navegador.
+1. `lib/temas.ts` — sumarlo a `TEMAS` y a los nombres, con su grupo.
+2. `styles/themes/<id>.ts` — el bloque claro (`html[data-tema='<id>']`) y el
+   oscuro (`html.dark[data-tema='<id>']`) con todos los tokens. Si lleva
+   dibujos, van en `scripts/art/<grupo>.ts` y se generan con
+   `npm run themes:art -- <grupo>` (los de hadas, con `scripts/arte-hadas.py`).
+3. `npm run themes:index` — registra el CSS y saca de ahí los hex de las
+   muestras de Ajustes y de la barra del navegador. Nadie los copia a mano.
+4. `npm run themes:test` — contrastes WCAG en los dos modos, muestras, texturas
+   y letras. Tiene que pasar.
+5. `npm run db:generate` — el check `perfiles_tema_valido` sale de `TEMAS`, así
+   que esto arma la migración solo.
 
 ### Las cuatro decisiones que hay que conocer
 
