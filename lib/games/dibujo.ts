@@ -3,7 +3,7 @@ import { GameError } from './error';
 import { DRAWING_WORDS } from './dibujo-words';
 
 export const DRAWING_ROUNDS = 4;
-export const ROUND_SECONDS = 80;
+export const ROUND_SECONDS = 100;
 /** Coordinates are normalized to a 0–CANVAS square, whatever the screen size. */
 export const CANVAS = 1000;
 /** Limits that keep the row small: each stroke is simplified before it is sent. */

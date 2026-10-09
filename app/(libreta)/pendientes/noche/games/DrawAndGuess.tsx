@@ -163,7 +163,7 @@ export function DrawAndGuess({ table, match, pending }: { table: Table; match: D
                 key={index}
                 word={word}
                 strokes={round.strokes}
-                disabled={busy || outOfTime}
+                disabled={outOfTime}
                 onStroke={(stroke) => play({ game: 'dibujo', stroke })}
                 onUndo={() => play({ game: 'dibujo', undo: true })}
                 onClear={() => play({ game: 'dibujo', clear: true })}
@@ -214,11 +214,17 @@ function Clock({ left, total }: { left: number; total: number }) {
   );
 }
 
+/** A smooth curve through the points: each one is a control point, the midpoints are on the line. */
 function strokePath(points: number[]) {
   if (points.length === 2) return `M${points[0]} ${points[1]}l0.1 0`;
+  if (points.length === 4) return `M${points[0]} ${points[1]}L${points[2]} ${points[3]}`;
   let d = `M${points[0]} ${points[1]}`;
-  for (let i = 2; i < points.length; i += 2) d += `L${points[i]} ${points[i + 1]}`;
-  return d;
+  for (let i = 2; i < points.length - 2; i += 2) {
+    const mx = (points[i]! + points[i + 2]!) / 2;
+    const my = (points[i + 1]! + points[i + 3]!) / 2;
+    d += `Q${points[i]} ${points[i + 1]} ${mx} ${my}`;
+  }
+  return d + `L${points[points.length - 2]} ${points[points.length - 1]}`;
 }
 
 /** The drawing, as SVG: the same picture on both phones, at any size. */
@@ -288,23 +294,54 @@ function DrawerView({
   word: string | null;
   strokes: Stroke[];
   disabled: boolean;
-  onStroke: (s: Stroke) => void;
+  onStroke: (s: Stroke) => Promise<string | null>;
   onUndo: () => void;
   onClear: () => void;
 }) {
   const [color, setColor] = useState<StrokeColor>('tinta');
   const [width, setWidth] = useState(WIDTHS[0]!);
-  const [live, setLive] = useState<Stroke | null>(null);
-  // The stroke just sent stays visible until the match brings it back.
-  const [sent, setSent] = useState<{ stroke: Stroke; after: number } | null>(null);
+  // The stroke under the finger lives in a ref: several pointer events can
+  // arrive between renders, and none of their points should be lost.
+  const live = useRef<Stroke | null>(null);
+  const [, redraw] = useState(0);
+  // Strokes already sent stay visible until the match brings them back, so the
+  // next one can start without waiting for the server.
+  const [inFlight, setInFlight] = useState<{ id: number; stroke: Stroke }[]>([]);
+  const nextId = useRef(0);
   const svg = useRef<SVGSVGElement>(null);
-  const shown = sent && strokes.length <= sent.after ? sent.stroke : null;
 
-  function point(e: React.PointerEvent): [number, number] {
+  // iOS Safari ignores touch-action on SVG at times and takes the gesture to
+  // scroll (and fires pointercancel). Blocking the touch itself keeps it ours.
+  useEffect(() => {
+    const el = svg.current;
+    if (!el) return;
+    const block = (e: TouchEvent) => e.preventDefault();
+    el.addEventListener('touchstart', block, { passive: false });
+    el.addEventListener('touchmove', block, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', block);
+      el.removeEventListener('touchmove', block);
+    };
+  }, []);
+
+  function point(e: { clientX: number; clientY: number }): [number, number] {
     const r = svg.current!.getBoundingClientRect();
     const clamp = (v: number) => Math.min(CANVAS, Math.max(0, Math.round(v)));
     return [clamp(((e.clientX - r.left) / r.width) * CANVAS), clamp(((e.clientY - r.top) / r.height) * CANVAS)];
   }
+
+  function end() {
+    const stroke = live.current;
+    if (!stroke) return;
+    live.current = null;
+    const sent = { ...stroke, points: simplify(stroke.points) };
+    const id = nextId.current++;
+    setInFlight((list) => [...list, { id, stroke: sent }]);
+    void Promise.resolve(onStroke(sent)).finally(() => setInFlight((list) => list.filter((s) => s.id !== id)));
+  }
+
+  const shown = [...strokes, ...inFlight.map((s) => s.stroke)];
+  const sending = inFlight.length > 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -313,28 +350,30 @@ function DrawerView({
       </p>
       <Board
         ref={svg}
-        strokes={strokes}
-        live={live ?? shown}
+        strokes={shown}
+        live={live.current}
         className={cn('w-full touch-none select-none', disabled ? 'opacity-70' : 'cursor-crosshair')}
-        style={{ touchAction: 'none' }}
+        style={{ touchAction: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
         aria-label="Pizarrón para dibujar"
         onPointerDown={(e) => {
-          if (disabled) return;
-          e.currentTarget.setPointerCapture(e.pointerId);
-          setLive({ color, width: color === 'borrar' ? 40 : width, points: point(e) });
+          if (disabled || live.current || !e.isPrimary) return;
+          e.preventDefault();
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+          } catch {}
+          live.current = { color, width: color === 'borrar' ? 40 : width, points: point(e) };
+          redraw((n) => n + 1);
         }}
         onPointerMove={(e) => {
-          if (!live) return;
-          setLive({ ...live, points: [...live.points, ...point(e)] });
+          if (!live.current || !e.isPrimary) return;
+          const events = e.nativeEvent.getCoalescedEvents?.() ?? [];
+          const added = (events.length ? events : [e]).flatMap((ev) => point(ev));
+          live.current = { ...live.current, points: [...live.current.points, ...added] };
+          redraw((n) => n + 1);
         }}
-        onPointerUp={() => {
-          if (!live) return;
-          const stroke = { ...live, points: simplify(live.points) };
-          setSent({ stroke, after: strokes.length });
-          setLive(null);
-          onStroke(stroke);
-        }}
-        onPointerCancel={() => setLive(null)}
+        onPointerUp={end}
+        onPointerCancel={end}
+        onLostPointerCapture={end}
       />
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {PEN_COLORS.map((c) => (
@@ -372,10 +411,10 @@ function DrawerView({
         ))}
       </div>
       <div className="flex justify-center gap-2">
-        <Boton variante="secundario" className="h-9 px-3 text-sm" disabled={disabled || strokes.length === 0} onClick={onUndo}>
+        <Boton variante="secundario" className="h-9 px-3 text-sm" disabled={disabled || sending || strokes.length === 0} onClick={onUndo}>
           <Undo2 className="size-4" aria-hidden /> Deshacer
         </Boton>
-        <Boton variante="fantasma" className="h-9 px-3 text-sm" disabled={disabled || strokes.length === 0} onClick={onClear}>
+        <Boton variante="fantasma" className="h-9 px-3 text-sm" disabled={disabled || sending || strokes.length === 0} onClick={onClear}>
           <Trash2 className="size-4" aria-hidden /> Borrar todo
         </Boton>
       </div>
