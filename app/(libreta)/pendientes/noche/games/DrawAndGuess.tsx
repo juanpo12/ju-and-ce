@@ -32,8 +32,19 @@ export const meta = {
 const REVEAL_MS = 2600;
 const PEN_COLORS: StrokeColor[] = ['tinta', 'acento', 'durazno', 'menta'];
 const WIDTHS = [6, 14, 28];
-/** The eraser paints with the board's own color. */
-const colorVar = (c: StrokeColor) => (c === 'borrar' ? 'var(--superficie)' : `var(--${c})`);
+/**
+ * Fixed colors, not theme tokens: each phone may have its own theme, and the
+ * drawing must look the same on both. The board is always white paper, and
+ * the eraser paints with it.
+ */
+const PAPER = '#fffdf8';
+const INKS: Record<StrokeColor, { hex: string; name: string }> = {
+  tinta: { hex: '#1f1f1f', name: 'negro' },
+  acento: { hex: '#d93a3a', name: 'rojo' },
+  durazno: { hex: '#f08a24', name: 'naranja' },
+  menta: { hex: '#2e9e6b', name: 'verde' },
+  borrar: { hex: PAPER, name: 'goma' },
+};
 
 /**
  * One draws, the other guesses. The word reaches only the drawer (private
@@ -243,15 +254,16 @@ function Board({
   return (
     <svg
       viewBox={`0 0 ${CANVAS} ${CANVAS}`}
-      className={cn('aspect-square rounded-tema border-2 border-borde bg-superficie', className)}
+      className={cn('aspect-square rounded-tema border-2 border-borde', className)}
       {...rest}
+      style={{ backgroundColor: PAPER, ...rest.style }}
     >
       {[...strokes, ...(live ? [live] : [])].map((s, i) => (
         <path
           key={i}
           d={strokePath(s.points)}
           fill="none"
-          stroke={colorVar(s.color)}
+          stroke={INKS[s.color].hex}
           strokeWidth={s.width}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -381,10 +393,10 @@ function DrawerView({
             key={c}
             type="button"
             onClick={() => setColor(c)}
-            aria-label={`Color ${c}`}
+            aria-label={`Color ${INKS[c].name}`}
             aria-pressed={color === c}
             className={cn('foco tocable size-8 rounded-full border-2', color === c ? 'border-tinta ring-2 ring-acento ring-offset-2 ring-offset-fondo' : 'border-borde')}
-            style={{ backgroundColor: colorVar(c) }}
+            style={{ backgroundColor: INKS[c].hex }}
           />
         ))}
         <button

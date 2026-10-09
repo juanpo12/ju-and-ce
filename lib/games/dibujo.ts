@@ -14,7 +14,7 @@ export const MAX_GUESS_LENGTH = 40;
 export const MIN_WIDTH = 2;
 export const MAX_WIDTH = 60;
 
-/** Colors are theme tokens, so the drawing follows the theme on both phones. */
+/** Color names; each one is drawn with a fixed color, the same whatever the theme. */
 export const STROKE_COLORS = ['tinta', 'acento', 'durazno', 'menta', 'borrar'] as const;
 export type StrokeColor = (typeof STROKE_COLORS)[number];
 
