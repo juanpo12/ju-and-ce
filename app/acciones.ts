@@ -9,7 +9,7 @@ import { clienteAdmin } from '@/lib/supabase/admin';
 import { traerFicha } from '@/lib/tmdb';
 import { esDemo } from '@/lib/demo';
 import { TEMAS, type Tema } from '@/lib/temas';
-import type { Tipo, TipoMimo } from '@/db/schema';
+import { TIPOS_MIMO, type Tipo, type TipoMimo } from '@/db/schema';
 import {
   borrarEntrada,
   borrarPuntaje,
@@ -27,9 +27,8 @@ import {
   liberarInvitacion,
   listarPendientes,
   aceptarMimos,
-  estadoMimos,
   mandarMimo,
-  type EstadoMimos,
+  mimoRecibido,
   marcarComoVista,
   recordSoloPick,
   reservarInvitacion,
@@ -477,16 +476,16 @@ export async function cancelNightAction(id: string): Promise<NightResponse> {
   });
 }
 
-/** Lo que hay que mostrar de mimos al abrir la app o cuando llega uno nuevo. */
-export async function accionEstadoMimos(): Promise<EstadoMimos> {
-  if (esDemo) return { recibido: null, esperando: false };
+/** El mimo que me toca contestar, si hay. */
+export async function accionMimoRecibido(): Promise<TipoMimo | null> {
+  if (esDemo) return null;
   const perfil = await exigirPerfil();
-  return estadoMimos(perfil.id);
+  return mimoRecibido(perfil.id);
 }
 
-/** «Yo también te amo» o «Yo más»: le llega al otro. */
+/** El corazón («te amo»), «Yo también te amo» o «Yo más»: le llega al otro. */
 export async function accionMandarMimo(tipo: TipoMimo) {
-  if (tipo !== 'tambien' && tipo !== 'mas') throw new Error('Mimo inválido');
+  if (!TIPOS_MIMO.includes(tipo)) throw new Error('Mimo inválido');
   const perfil = await exigirPerfil();
   if (!perfil.companero || esDemo) return;
   await mandarMimo(perfil.id, perfil.espacioId, perfil.companero.id, tipo);

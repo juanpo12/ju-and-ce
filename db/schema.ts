@@ -289,12 +289,13 @@ export const nights = pgTable('noches', {
 
 export type Night = typeof nights.$inferSelect;
 
-export const TIPOS_MIMO = ['tambien', 'mas'] as const;
+export const TIPOS_MIMO = ['te_amo', 'tambien', 'mas'] as const;
 export type TipoMimo = (typeof TIPOS_MIMO)[number];
 
 /**
- * El ida y vuelta de «te amo»: Ceci contesta el mensaje de Juan con «Yo también»
- * y de ahí en más cada uno puede redoblar con «Yo más». Llega en vivo por
+ * El ida y vuelta de «te amo»: uno toca el corazón («te amo»), el otro contesta
+ * «Yo también» y de ahí en más cada uno puede redoblar con «Yo más» o aceptar,
+ * que corta la cadena hasta que alguien vuelva a tocar el corazón. Llega en vivo por
  * Realtime y, si el otro no tenía la app abierta, lo ve al entrar: queda
  * pendiente hasta que `visto_en` deja de ser null.
  */
@@ -309,12 +310,13 @@ export const mimos = pgTable('mimos', {
   para: uuid('para')
     .notNull()
     .references(() => perfiles.id, { onDelete: 'cascade' }),
-  // 'tambien' = «Yo también te amo», 'mas' = «Yo te amo más».
+  // 'te_amo' arranca la cadena (el botón del corazón), 'tambien' = «Yo también
+  // te amo», 'mas' = «Yo te amo más». «Aceptar» la corta: no inserta nada.
   tipo: text('tipo', { enum: TIPOS_MIMO }).notNull().default('tambien'),
   creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
   vistoEn: timestamp('visto_en', { withTimezone: true }),
 }, (t) => [
-  check('mimos_tipo_valido', sql`${t.tipo} in ('tambien', 'mas')`),
+  check('mimos_tipo_valido', sql`${t.tipo} in ('te_amo', 'tambien', 'mas')`),
   index('mimos_espacio_idx').on(t.espacioId, t.creadoEn.desc()),
   index('mimos_para_idx').on(t.para).where(sql`${t.vistoEn} is null`),
   pgPolicy('mimos_lectura', {

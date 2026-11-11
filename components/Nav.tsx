@@ -112,12 +112,13 @@ function SettingsButton({ className }: { className?: string }) {
 }
 
 /** On mobile, at the top: the notebook name, the mode toggle and Ajustes. */
-export function Cabecera({ espacio }: { espacio: string }) {
+export function Cabecera({ espacio, extra }: { espacio: string; extra?: React.ReactNode }) {
   return (
     <header className="safe-arriba sticky top-0 z-20 border-b border-borde/60 bg-fondo/85 backdrop-blur-md md:hidden">
       <div className="flex h-12 items-center justify-between pl-4 pr-1.5">
         <p className="truncate pr-1 font-titulo text-xl text-tinta">{espacio}</p>
         <div className="flex shrink-0 items-center">
+          {extra}
           <BotonModo />
           <SettingsButton />
         </div>
@@ -126,7 +127,15 @@ export function Cabecera({ espacio }: { espacio: string }) {
   );
 }
 
-export function Sidebar({ espacio, nombre }: { espacio: string; nombre: string }) {
+export function Sidebar({
+  espacio,
+  nombre,
+  extra,
+}: {
+  espacio: string;
+  nombre: string;
+  extra?: React.ReactNode;
+}) {
   const activa = usarActiva();
   return (
     <nav
@@ -139,6 +148,7 @@ export function Sidebar({ espacio, nombre }: { espacio: string; nombre: string }
           <p className="text-xs text-tinta-suave">Hola, {nombre}</p>
         </div>
         <div className="-mt-1 flex shrink-0 items-center">
+          {extra}
           <BotonModo />
           <SettingsButton />
         </div>

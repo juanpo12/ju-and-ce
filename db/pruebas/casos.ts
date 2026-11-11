@@ -353,8 +353,8 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
   console.log('\nMimos (el «te amo» de vuelta)');
   {
     const enviado = await comoUsuario(CECI, (tx) =>
-      tx.insert(mimos).values({ espacioId: ESPACIO_A, de: CECI, para: JUAN }).returning());
-    chequear('Ceci le manda un mimo a Juan', enviado.length === 1);
+      tx.insert(mimos).values({ espacioId: ESPACIO_A, de: CECI, para: JUAN, tipo: 'te_amo' }).returning());
+    chequear('Ceci le manda un «te amo» a Juan', enviado[0]?.tipo === 'te_amo');
 
     await debeFallar('Ceci NO puede mandarlo a nombre de Juan', () =>
       comoUsuario(CECI, (tx) =>

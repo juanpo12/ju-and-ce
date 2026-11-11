@@ -824,23 +824,19 @@ function hoy() {
 /* ---------------------------------------------------------------------------
    Mimos: el ida y vuelta de «te amo» entre los dos.
 
-   Turnos: el último mimo del espacio dice de quién es la pelota. Si es para mí
-   y no lo vi, me toca contestar; si lo mandé yo y el otro todavía no lo vio,
-   estoy esperando y no me aparece nada.
+   El último mimo del espacio dice de quién es el turno: si es para mí y no lo
+   vi, me toca contestar. «Aceptar» lo marca visto sin mandar nada y la cadena
+   se corta hasta que alguien vuelva a tocar el corazón.
 --------------------------------------------------------------------------- */
 
-export type EstadoMimos = { recibido: TipoMimo | null; esperando: boolean };
-
-export async function estadoMimos(userId: string): Promise<EstadoMimos> {
+export async function mimoRecibido(userId: string): Promise<TipoMimo | null> {
   return comoUsuario(userId, async (tx) => {
     const [ultimo] = await tx
-      .select({ de: mimos.de, para: mimos.para, tipo: mimos.tipo, vistoEn: mimos.vistoEn })
+      .select({ para: mimos.para, tipo: mimos.tipo, vistoEn: mimos.vistoEn })
       .from(mimos)
       .orderBy(desc(mimos.creadoEn))
       .limit(1);
-    if (!ultimo || ultimo.vistoEn) return { recibido: null, esperando: false };
-    if (ultimo.para === userId) return { recibido: ultimo.tipo, esperando: false };
-    return { recibido: null, esperando: ultimo.de === userId };
+    return ultimo && !ultimo.vistoEn && ultimo.para === userId ? ultimo.tipo : null;
   });
 }
 

@@ -120,6 +120,13 @@
       "when": 1794406484445,
       "tag": "0016_mimos_tipo",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794409286977,
+      "tag": "0017_mimos_te_amo",
+      "breakpoints": true
     }
   ]
 }
