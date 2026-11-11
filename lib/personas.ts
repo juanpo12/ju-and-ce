@@ -37,3 +37,6 @@ export function personasDe(perfil: PerfilConCompanero): { yo: Persona; otro: Per
 
 /** La variable CSS del color, para `style`. Cambia sola con el tema y el modo. */
 export const varColor = (c: ColorPersona) => `var(--${c})`;
+
+/** Para Ceci, Juan es «juju»: los mensajes de amor cambian según quién los lee. */
+export const esCeci = (nombre: string) => nombre.trim().toLowerCase().startsWith('ceci');

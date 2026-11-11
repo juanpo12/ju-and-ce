@@ -3,7 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { exigirPerfil } from '@/lib/sesion';
+import { avisar } from '@/lib/push';
+import { esCeci } from '@/lib/personas';
 import { crearClienteServidor } from '@/lib/supabase/server';
 import { clienteAdmin } from '@/lib/supabase/admin';
 import { traerFicha } from '@/lib/tmdb';
@@ -27,6 +30,9 @@ import {
   liberarInvitacion,
   listarPendientes,
   aceptarMimos,
+  borrarSuscripcion,
+  guardarSuscripcion,
+  type DatosSuscripcion,
   mandarMimo,
   mimoRecibido,
   marcarComoVista,
@@ -488,7 +494,38 @@ export async function accionMandarMimo(tipo: TipoMimo) {
   if (!TIPOS_MIMO.includes(tipo)) throw new Error('Mimo inválido');
   const perfil = await exigirPerfil();
   if (!perfil.companero || esDemo) return;
-  await mandarMimo(perfil.id, perfil.espacioId, perfil.companero.id, tipo);
+  const para = perfil.companero;
+  await mandarMimo(perfil.id, perfil.espacioId, para.id, tipo);
+
+  // La notificación sale después de responder: el que manda no espera a Apple.
+  const quien = esCeci(para.nombre) ? 'Juju' : perfil.nombre;
+  const avisos: Record<TipoMimo, string> = {
+    te_amo: `${quien} te mandó un te amo 💛`,
+    tambien: `${quien} te contestó: «Yo también te amo» 💞`,
+    mas: `${quien} dice que te ama más 😤`,
+  };
+  after(() => avisar(para.id, { titulo: avisos[tipo], cuerpo: 'Tocá para contestarle' }));
+}
+
+/** Este navegador quiere recibir notificaciones. */
+export async function accionGuardarSuscripcion(datos: DatosSuscripcion) {
+  const perfil = await exigirPerfil();
+  if (esDemo) return;
+  const { endpoint, p256dh, auth } = datos ?? {};
+  if (
+    typeof endpoint !== 'string' || !endpoint.startsWith('https://') || endpoint.length > 1000 ||
+    typeof p256dh !== 'string' || p256dh.length > 200 ||
+    typeof auth !== 'string' || auth.length > 100
+  ) {
+    throw new Error('Suscripción inválida');
+  }
+  await guardarSuscripcion(perfil.id, { endpoint, p256dh, auth });
+}
+
+export async function accionBorrarSuscripcion(endpoint: string) {
+  const perfil = await exigirPerfil();
+  if (esDemo || typeof endpoint !== 'string') return;
+  await borrarSuscripcion(perfil.id, endpoint);
 }
 
 /** «Aceptar»: lo recibido queda visto, sin contestar. */

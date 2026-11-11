@@ -4,6 +4,7 @@ import { BotonSalir } from './BotonSalir';
 import { SelectorModo } from './SelectorModo';
 import { Invitar } from './Invitar';
 import { CambiarClave } from './CambiarClave';
+import { Notificaciones } from './Notificaciones';
 
 export const metadata = { title: 'Ajustes — Nuestra libreta' };
 
@@ -38,6 +39,11 @@ export default async function Ajustes() {
             <Invitar />
           </>
         )}
+      </section>
+
+      <section className="tarjeta mt-4 px-4 py-4">
+        <h2 className="font-titulo text-2xl text-tinta">Notificaciones</h2>
+        <Notificaciones />
       </section>
 
       <section className="tarjeta mt-4 px-4 py-4">

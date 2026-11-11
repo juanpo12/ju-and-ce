@@ -345,6 +345,33 @@ export const mimos = pgTable('mimos', {
 export type Mimo = typeof mimos.$inferSelect;
 
 /**
+ * Un celular (o compu) donde alguien activó las notificaciones. Una persona
+ * puede tener varias: el endpoint es único por navegador.
+ *
+ * Cada uno ve y maneja solo las suyas. Para avisarle al otro, el servidor las
+ * lee con la conexión privilegiada: las claves no tienen por qué llegar al
+ * navegador de nadie más.
+ */
+export const suscripcionesPush = pgTable('suscripciones_push', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  perfilId: uuid('perfil_id')
+    .notNull()
+    .references(() => perfiles.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  creadaEn: timestamp('creada_en', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('suscripciones_push_perfil_idx').on(t.perfilId),
+  pgPolicy('suscripciones_push_propias', {
+    for: 'all',
+    to: authenticatedRole,
+    using: sql`perfil_id = ${yo}`,
+    withCheck: sql`perfil_id = ${yo}`,
+  }),
+]);
+
+/**
  * El link con el que la otra persona se suma a la libreta. Se guarda el hash del
  * token, no el token: con la tabla sola no se puede armar un link que ande.
  *

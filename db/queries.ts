@@ -13,6 +13,7 @@ import {
   peliculas,
   perfiles,
   puntajes,
+  suscripcionesPush,
   vEntradasPuntuadas,
   vPorGenero,
   type EntradaPuntuada,
@@ -859,4 +860,51 @@ export async function aceptarMimos(userId: string) {
       .set({ vistoEn: sql`now()` })
       .where(and(eq(mimos.para, userId), isNull(mimos.vistoEn))),
   );
+}
+
+/* ---------------------------------------------------------------------------
+   Notificaciones push.
+--------------------------------------------------------------------------- */
+
+export type DatosSuscripcion = { endpoint: string; p256dh: string; auth: string };
+
+/**
+ * Con la conexión privilegiada a propósito: el endpoint es del navegador, no de
+ * la persona. Si en el mismo celular entra el otro, la suscripción pasa a ser
+ * suya — con la RLS ese cambio de dueño no se podría hacer. El id sale de la
+ * sesión, nunca del cliente.
+ */
+export async function guardarSuscripcion(userId: string, datos: DatosSuscripcion) {
+  await dbAdmin
+    .insert(suscripcionesPush)
+    .values({ perfilId: userId, ...datos })
+    .onConflictDoUpdate({
+      target: suscripcionesPush.endpoint,
+      set: { perfilId: userId, p256dh: datos.p256dh, auth: datos.auth },
+    });
+}
+
+export async function borrarSuscripcion(userId: string, endpoint: string) {
+  await comoUsuario(userId, (tx) =>
+    tx
+      .delete(suscripcionesPush)
+      .where(and(eq(suscripcionesPush.perfilId, userId), eq(suscripcionesPush.endpoint, endpoint))),
+  );
+}
+
+/** Solo del servidor: las del otro, para mandarle un aviso. */
+export async function suscripcionesDe(perfilId: string) {
+  return dbAdmin
+    .select({
+      endpoint: suscripcionesPush.endpoint,
+      p256dh: suscripcionesPush.p256dh,
+      auth: suscripcionesPush.auth,
+    })
+    .from(suscripcionesPush)
+    .where(eq(suscripcionesPush.perfilId, perfilId));
+}
+
+/** El servicio de push dijo que ya no existe (se desinstaló, se revocó el permiso). */
+export async function olvidarEndpoint(endpoint: string) {
+  await dbAdmin.delete(suscripcionesPush).where(eq(suscripcionesPush.endpoint, endpoint));
 }

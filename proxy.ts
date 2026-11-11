@@ -61,8 +61,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Todo menos estáticos, imágenes y el manifest. Tampoco el CSS de los temas
+    // Todo menos estáticos, imágenes, el manifest y el service worker. Tampoco el CSS de los temas
     // (theme-css): es público, no necesita sesión.
-    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|iconos/|theme-css/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|iconos/|theme-css/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

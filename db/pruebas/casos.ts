@@ -13,7 +13,7 @@
 import { sql, eq, and, type SQL } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import * as schema from '../schema';
-import { entradas, espacios, mimos, nights, peliculas, perfiles, puntajes } from '../schema';
+import { entradas, espacios, mimos, nights, suscripcionesPush, peliculas, perfiles, puntajes } from '../schema';
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -57,6 +57,8 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
   }
 
   async function limpiar() {
+    await dbAdmin.execute(sql`
+      delete from suscripciones_push where perfil_id in (${JUAN}::uuid, ${CECI}::uuid, ${INTRUSO}::uuid)`);
     await dbAdmin.execute(sql`
       delete from mimos where espacio_id in (${ESPACIO_A}::uuid, ${ESPACIO_B}::uuid)`);
     await dbAdmin.execute(sql`
@@ -382,6 +384,27 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
     const respuesta = await comoUsuario(JUAN, (tx) =>
       tx.insert(mimos).values({ espacioId: ESPACIO_A, de: JUAN, para: CECI, tipo: 'mas' }).returning());
     chequear('Juan le contesta «Yo más»', respuesta[0]?.tipo === 'mas');
+  }
+
+  console.log('\nSuscripciones push');
+  {
+    const propia = await comoUsuario(JUAN, (tx) =>
+      tx.insert(suscripcionesPush)
+        .values({ perfilId: JUAN, endpoint: 'https://push.example/juan', p256dh: 'k', auth: 'a' })
+        .returning());
+    chequear('Juan guarda su suscripción', propia.length === 1);
+
+    await debeFallar('Juan NO puede guardar una a nombre de Ceci', () =>
+      comoUsuario(JUAN, (tx) =>
+        tx.insert(suscripcionesPush)
+          .values({ perfilId: CECI, endpoint: 'https://push.example/trucha', p256dh: 'k', auth: 'a' })));
+
+    const ajenas = await comoUsuario(CECI, (tx) => tx.select().from(suscripcionesPush));
+    chequear('Ceci NO ve las suscripciones de Juan', ajenas.length === 0);
+
+    const borradas = await comoUsuario(CECI, (tx) =>
+      tx.delete(suscripcionesPush).where(eq(suscripcionesPush.perfilId, JUAN)).returning());
+    chequear('Ceci NO puede borrar las de Juan', borradas.length === 0);
   }
 
   console.log('\nLimpiando fixtures…');

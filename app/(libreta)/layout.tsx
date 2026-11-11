@@ -1,5 +1,5 @@
 import { exigirPerfil } from '@/lib/sesion';
-import { personasDe } from '@/lib/personas';
+import { esCeci as esNombreDeCeci, personasDe } from '@/lib/personas';
 import { Cabecera, Sidebar, TabBar } from '@/components/Nav';
 import { EscuchaCambios } from '@/components/EscuchaCambios';
 import { Mimos } from '@/components/Mimos';
@@ -8,8 +8,7 @@ import { BotonTeAmo } from '@/components/BotonTeAmo';
 export default async function LayoutLibreta({ children }: { children: React.ReactNode }) {
   const perfil = await exigirPerfil();
   const { yo, otro } = personasDe(perfil);
-  // Para Ceci, Juan es «juju».
-  const esCeci = perfil.nombre.trim().toLowerCase().startsWith('ceci');
+  const esCeci = esNombreDeCeci(perfil.nombre);
   const teAmo = otro ? (
     <BotonTeAmo
       texto={esCeci ? 'Decirle a juju que lo amás' : `Decirle a ${otro.nombre} que la amás`}

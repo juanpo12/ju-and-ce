@@ -127,6 +127,13 @@
       "when": 1794409286977,
       "tag": "0017_mimos_te_amo",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794410003281,
+      "tag": "0018_notificaciones",
+      "breakpoints": true
     }
   ]
 }
