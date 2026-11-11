@@ -26,11 +26,13 @@ import {
   invitacionValida,
   liberarInvitacion,
   listarPendientes,
+  mandarMimo,
   marcarComoVista,
   recordSoloPick,
   reservarInvitacion,
   setPicked,
   sumarAlEspacio,
+  tomarMimosPendientes,
   transitionNight,
   type Transition,
 } from '@/db/queries';
@@ -471,4 +473,18 @@ export async function cancelNightAction(id: string): Promise<NightResponse> {
     refrescar(...NIGHT_PATHS);
     return night;
   });
+}
+
+/** El «Yo también te amo» del mensaje para Ceci: le llega al otro. */
+export async function accionMandarMimo() {
+  const perfil = await exigirPerfil();
+  if (!perfil.companero || esDemo) return;
+  await mandarMimo(perfil.id, perfil.espacioId, perfil.companero.id);
+}
+
+/** Cuántos mimos esperaban sin ver. Los deja marcados como vistos. */
+export async function accionTomarMimos(): Promise<number> {
+  if (esDemo) return 0;
+  const perfil = await exigirPerfil();
+  return tomarMimosPendientes(perfil.id);
 }

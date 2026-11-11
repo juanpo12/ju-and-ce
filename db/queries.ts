@@ -8,6 +8,7 @@ import {
   entradas,
   espacios,
   invitaciones,
+  mimos,
   nights,
   peliculas,
   perfiles,
@@ -817,4 +818,26 @@ export type HistoryNight = Awaited<ReturnType<typeof nightsHistory>>[number];
 
 function hoy() {
   return hoyISO(ZONA_LIBRETA);
+}
+
+/* ---------------------------------------------------------------------------
+   Mimos: el «te amo» de vuelta del mensaje para Ceci.
+--------------------------------------------------------------------------- */
+
+export async function mandarMimo(userId: string, espacioId: string, para: string) {
+  await comoUsuario(userId, (tx) =>
+    tx.insert(mimos).values({ espacioId, de: userId, para }),
+  );
+}
+
+/** Los que todavía no vio, y ya quedan marcados: se muestran una sola vez. */
+export async function tomarMimosPendientes(userId: string): Promise<number> {
+  return comoUsuario(userId, async (tx) => {
+    const filas = await tx
+      .update(mimos)
+      .set({ vistoEn: sql`now()` })
+      .where(and(eq(mimos.para, userId), isNull(mimos.vistoEn)))
+      .returning({ id: mimos.id });
+    return filas.length;
+  });
 }

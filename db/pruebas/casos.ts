@@ -13,7 +13,7 @@
 import { sql, eq, and, type SQL } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import * as schema from '../schema';
-import { entradas, espacios, nights, peliculas, perfiles, puntajes } from '../schema';
+import { entradas, espacios, mimos, nights, peliculas, perfiles, puntajes } from '../schema';
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -57,6 +57,8 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
   }
 
   async function limpiar() {
+    await dbAdmin.execute(sql`
+      delete from mimos where espacio_id in (${ESPACIO_A}::uuid, ${ESPACIO_B}::uuid)`);
     await dbAdmin.execute(sql`
       delete from noches where espacio_id in (${ESPACIO_A}::uuid, ${ESPACIO_B}::uuid)`);
     await dbAdmin.execute(sql`
@@ -346,6 +348,32 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
     chequear('la vista expone elegida_en (se recreó en 0008)', view[0]?.elegida_en != null);
 
     await dbAdmin.update(entradas).set({ pickedAt: null }).where(eq(entradas.id, ids.a3));
+  }
+
+  console.log('\nMimos (el «te amo» de vuelta)');
+  {
+    const enviado = await comoUsuario(CECI, (tx) =>
+      tx.insert(mimos).values({ espacioId: ESPACIO_A, de: CECI, para: JUAN }).returning());
+    chequear('Ceci le manda un mimo a Juan', enviado.length === 1);
+
+    await debeFallar('Ceci NO puede mandarlo a nombre de Juan', () =>
+      comoUsuario(CECI, (tx) =>
+        tx.insert(mimos).values({ espacioId: ESPACIO_A, de: JUAN, para: CECI })));
+
+    await debeFallar('Intruso NO puede mandarle un mimo a Juan', () =>
+      comoUsuario(INTRUSO, (tx) =>
+        tx.insert(mimos).values({ espacioId: ESPACIO_B, de: INTRUSO, para: JUAN })));
+
+    const ajeno = await comoUsuario(INTRUSO, (tx) => tx.select().from(mimos));
+    chequear('Intruso NO ve los mimos ajenos', ajeno.length === 0);
+
+    const porCeci = await comoUsuario(CECI, (tx) =>
+      tx.update(mimos).set({ vistoEn: new Date() }).where(eq(mimos.para, JUAN)).returning());
+    chequear('Ceci NO puede marcarlo como visto por Juan', porCeci.length === 0);
+
+    const visto = await comoUsuario(JUAN, (tx) =>
+      tx.update(mimos).set({ vistoEn: new Date() }).where(eq(mimos.para, JUAN)).returning());
+    chequear('Juan lo marca como visto', visto.length === 1);
   }
 
   console.log('\nLimpiando fixtures…');

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { DialogoAdaptable } from '@/components/DialogoAdaptable';
 import { Boton } from '@/components/Boton';
+import { accionMandarMimo } from '@/app/acciones';
 
 const CLAVE = 'mensaje-para-ceci';
 
@@ -37,7 +38,14 @@ export function MensajeParaCeci() {
         <p className="font-titulo text-2xl font-bold leading-snug text-tinta">
           Tu juju te ama por siempre mamor
         </p>
-        <Boton className="w-full" onClick={() => setAbierto(false)}>
+        <Boton
+          className="w-full"
+          onClick={() => {
+            setAbierto(false);
+            // A Juan le llega en vivo, o al abrir la app si la tenía cerrada.
+            void accionMandarMimo().catch(() => {});
+          }}
+        >
           Yo también te amo 💛
         </Boton>
       </div>

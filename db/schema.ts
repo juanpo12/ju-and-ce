@@ -290,6 +290,51 @@ export const nights = pgTable('noches', {
 export type Night = typeof nights.$inferSelect;
 
 /**
+ * Un «te amo» de uno al otro: hoy, el botón del mensaje para Ceci. Llega en vivo
+ * por Realtime y, si el otro no tenía la app abierta, lo ve al entrar: queda
+ * pendiente hasta que `visto_en` deja de ser null.
+ */
+export const mimos = pgTable('mimos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  espacioId: uuid('espacio_id')
+    .notNull()
+    .references(() => espacios.id, { onDelete: 'cascade' }),
+  de: uuid('de')
+    .notNull()
+    .references(() => perfiles.id, { onDelete: 'cascade' }),
+  para: uuid('para')
+    .notNull()
+    .references(() => perfiles.id, { onDelete: 'cascade' }),
+  creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
+  vistoEn: timestamp('visto_en', { withTimezone: true }),
+}, (t) => [
+  index('mimos_para_idx').on(t.para).where(sql`${t.vistoEn} is null`),
+  pgPolicy('mimos_lectura', {
+    for: 'select',
+    to: authenticatedRole,
+    using: sql`espacio_id = ${miEspacio}`,
+  }),
+  // Solo a nombre propio y a alguien del mismo espacio.
+  pgPolicy('mimos_envio', {
+    for: 'insert',
+    to: authenticatedRole,
+    withCheck: sql`de = ${yo} and espacio_id = ${miEspacio} and exists (
+      select 1 from public.perfiles p
+      where p.id = para and p.espacio_id = ${miEspacio}
+    )`,
+  }),
+  // Marcar como visto lo hace solo quien lo recibe.
+  pgPolicy('mimos_visto', {
+    for: 'update',
+    to: authenticatedRole,
+    using: sql`para = ${yo}`,
+    withCheck: sql`para = ${yo} and espacio_id = ${miEspacio}`,
+  }),
+]);
+
+export type Mimo = typeof mimos.$inferSelect;
+
+/**
  * El link con el que la otra persona se suma a la libreta. Se guarda el hash del
  * token, no el token: con la tabla sola no se puede armar un link que ande.
  *
