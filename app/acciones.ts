@@ -9,7 +9,7 @@ import { clienteAdmin } from '@/lib/supabase/admin';
 import { traerFicha } from '@/lib/tmdb';
 import { esDemo } from '@/lib/demo';
 import { TEMAS, type Tema } from '@/lib/temas';
-import type { Tipo } from '@/db/schema';
+import type { Tipo, TipoMimo } from '@/db/schema';
 import {
   borrarEntrada,
   borrarPuntaje,
@@ -26,13 +26,15 @@ import {
   invitacionValida,
   liberarInvitacion,
   listarPendientes,
+  aceptarMimos,
+  estadoMimos,
   mandarMimo,
+  type EstadoMimos,
   marcarComoVista,
   recordSoloPick,
   reservarInvitacion,
   setPicked,
   sumarAlEspacio,
-  tomarMimosPendientes,
   transitionNight,
   type Transition,
 } from '@/db/queries';
@@ -475,16 +477,24 @@ export async function cancelNightAction(id: string): Promise<NightResponse> {
   });
 }
 
-/** El «Yo también te amo» del mensaje para Ceci: le llega al otro. */
-export async function accionMandarMimo() {
+/** Lo que hay que mostrar de mimos al abrir la app o cuando llega uno nuevo. */
+export async function accionEstadoMimos(): Promise<EstadoMimos> {
+  if (esDemo) return { recibido: null, esperando: false };
   const perfil = await exigirPerfil();
-  if (!perfil.companero || esDemo) return;
-  await mandarMimo(perfil.id, perfil.espacioId, perfil.companero.id);
+  return estadoMimos(perfil.id);
 }
 
-/** Cuántos mimos esperaban sin ver. Los deja marcados como vistos. */
-export async function accionTomarMimos(): Promise<number> {
-  if (esDemo) return 0;
+/** «Yo también te amo» o «Yo más»: le llega al otro. */
+export async function accionMandarMimo(tipo: TipoMimo) {
+  if (tipo !== 'tambien' && tipo !== 'mas') throw new Error('Mimo inválido');
   const perfil = await exigirPerfil();
-  return tomarMimosPendientes(perfil.id);
+  if (!perfil.companero || esDemo) return;
+  await mandarMimo(perfil.id, perfil.espacioId, perfil.companero.id, tipo);
+}
+
+/** «Aceptar»: lo recibido queda visto, sin contestar. */
+export async function accionAceptarMimos() {
+  if (esDemo) return;
+  const perfil = await exigirPerfil();
+  await aceptarMimos(perfil.id);
 }

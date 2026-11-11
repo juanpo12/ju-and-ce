@@ -289,9 +289,13 @@ export const nights = pgTable('noches', {
 
 export type Night = typeof nights.$inferSelect;
 
+export const TIPOS_MIMO = ['tambien', 'mas'] as const;
+export type TipoMimo = (typeof TIPOS_MIMO)[number];
+
 /**
- * Un «te amo» de uno al otro: hoy, el botón del mensaje para Ceci. Llega en vivo
- * por Realtime y, si el otro no tenía la app abierta, lo ve al entrar: queda
+ * El ida y vuelta de «te amo»: Ceci contesta el mensaje de Juan con «Yo también»
+ * y de ahí en más cada uno puede redoblar con «Yo más». Llega en vivo por
+ * Realtime y, si el otro no tenía la app abierta, lo ve al entrar: queda
  * pendiente hasta que `visto_en` deja de ser null.
  */
 export const mimos = pgTable('mimos', {
@@ -305,9 +309,13 @@ export const mimos = pgTable('mimos', {
   para: uuid('para')
     .notNull()
     .references(() => perfiles.id, { onDelete: 'cascade' }),
+  // 'tambien' = «Yo también te amo», 'mas' = «Yo te amo más».
+  tipo: text('tipo', { enum: TIPOS_MIMO }).notNull().default('tambien'),
   creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
   vistoEn: timestamp('visto_en', { withTimezone: true }),
 }, (t) => [
+  check('mimos_tipo_valido', sql`${t.tipo} in ('tambien', 'mas')`),
+  index('mimos_espacio_idx').on(t.espacioId, t.creadoEn.desc()),
   index('mimos_para_idx').on(t.para).where(sql`${t.vistoEn} is null`),
   pgPolicy('mimos_lectura', {
     for: 'select',

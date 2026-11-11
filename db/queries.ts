@@ -19,6 +19,7 @@ import {
   type Night,
   type Perfil,
   type Tipo,
+  type TipoMimo,
 } from './index';
 import { createHash, randomBytes } from 'node:crypto';
 import { hoyISO, ZONA_LIBRETA } from '@/lib/fechas';
@@ -821,23 +822,45 @@ function hoy() {
 }
 
 /* ---------------------------------------------------------------------------
-   Mimos: el «te amo» de vuelta del mensaje para Ceci.
+   Mimos: el ida y vuelta de «te amo» entre los dos.
+
+   Turnos: el último mimo del espacio dice de quién es la pelota. Si es para mí
+   y no lo vi, me toca contestar; si lo mandé yo y el otro todavía no lo vio,
+   estoy esperando y no me aparece nada.
 --------------------------------------------------------------------------- */
 
-export async function mandarMimo(userId: string, espacioId: string, para: string) {
-  await comoUsuario(userId, (tx) =>
-    tx.insert(mimos).values({ espacioId, de: userId, para }),
-  );
+export type EstadoMimos = { recibido: TipoMimo | null; esperando: boolean };
+
+export async function estadoMimos(userId: string): Promise<EstadoMimos> {
+  return comoUsuario(userId, async (tx) => {
+    const [ultimo] = await tx
+      .select({ de: mimos.de, para: mimos.para, tipo: mimos.tipo, vistoEn: mimos.vistoEn })
+      .from(mimos)
+      .orderBy(desc(mimos.creadoEn))
+      .limit(1);
+    if (!ultimo || ultimo.vistoEn) return { recibido: null, esperando: false };
+    if (ultimo.para === userId) return { recibido: ultimo.tipo, esperando: false };
+    return { recibido: null, esperando: ultimo.de === userId };
+  });
 }
 
-/** Los que todavía no vio, y ya quedan marcados: se muestran una sola vez. */
-export async function tomarMimosPendientes(userId: string): Promise<number> {
-  return comoUsuario(userId, async (tx) => {
-    const filas = await tx
+/** Contestar cierra lo que me habían mandado: queda visto. */
+export async function mandarMimo(userId: string, espacioId: string, para: string, tipo: TipoMimo) {
+  await comoUsuario(userId, async (tx) => {
+    await tx
       .update(mimos)
       .set({ vistoEn: sql`now()` })
-      .where(and(eq(mimos.para, userId), isNull(mimos.vistoEn)))
-      .returning({ id: mimos.id });
-    return filas.length;
+      .where(and(eq(mimos.para, userId), isNull(mimos.vistoEn)));
+    await tx.insert(mimos).values({ espacioId, de: userId, para, tipo });
   });
+}
+
+/** «Aceptar»: lo vi y no redoblo. */
+export async function aceptarMimos(userId: string) {
+  await comoUsuario(userId, (tx) =>
+    tx
+      .update(mimos)
+      .set({ vistoEn: sql`now()` })
+      .where(and(eq(mimos.para, userId), isNull(mimos.vistoEn))),
+  );
 }

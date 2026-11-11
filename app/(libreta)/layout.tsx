@@ -2,8 +2,7 @@ import { exigirPerfil } from '@/lib/sesion';
 import { personasDe } from '@/lib/personas';
 import { Cabecera, Sidebar, TabBar } from '@/components/Nav';
 import { EscuchaCambios } from '@/components/EscuchaCambios';
-import { MensajeParaCeci } from '@/components/MensajeParaCeci';
-import { RecibeMimos } from '@/components/RecibeMimos';
+import { Mimos } from '@/components/Mimos';
 
 export default async function LayoutLibreta({ children }: { children: React.ReactNode }) {
   const perfil = await exigirPerfil();
@@ -23,8 +22,7 @@ export default async function LayoutLibreta({ children }: { children: React.Reac
 
       <TabBar />
       <EscuchaCambios espacioId={perfil.espacioId} yo={yo} otro={otro} />
-      {esCeci && <MensajeParaCeci />}
-      <RecibeMimos yo={yo} otro={otro} />
+      <Mimos yo={yo} otro={otro} esCeci={esCeci} />
     </div>
   );
 }

@@ -371,9 +371,17 @@ export async function correrCasos({ dbAdmin, comoUsuario, filas }: Ctx) {
       tx.update(mimos).set({ vistoEn: new Date() }).where(eq(mimos.para, JUAN)).returning());
     chequear('Ceci NO puede marcarlo como visto por Juan', porCeci.length === 0);
 
+    await debeFallar('el check rechaza un tipo de mimo que no existe', () =>
+      dbAdmin.execute(sql`insert into mimos (espacio_id, de, para, tipo)
+        values (${ESPACIO_A}::uuid, ${JUAN}::uuid, ${CECI}::uuid, 'odio')`));
+
     const visto = await comoUsuario(JUAN, (tx) =>
       tx.update(mimos).set({ vistoEn: new Date() }).where(eq(mimos.para, JUAN)).returning());
     chequear('Juan lo marca como visto', visto.length === 1);
+
+    const respuesta = await comoUsuario(JUAN, (tx) =>
+      tx.insert(mimos).values({ espacioId: ESPACIO_A, de: JUAN, para: CECI, tipo: 'mas' }).returning());
+    chequear('Juan le contesta «Yo más»', respuesta[0]?.tipo === 'mas');
   }
 
   console.log('\nLimpiando fixtures…');
