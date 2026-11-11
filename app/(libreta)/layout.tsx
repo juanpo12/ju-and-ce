@@ -2,10 +2,13 @@ import { exigirPerfil } from '@/lib/sesion';
 import { personasDe } from '@/lib/personas';
 import { Cabecera, Sidebar, TabBar } from '@/components/Nav';
 import { EscuchaCambios } from '@/components/EscuchaCambios';
+import { MensajeParaCeci } from '@/components/MensajeParaCeci';
 
 export default async function LayoutLibreta({ children }: { children: React.ReactNode }) {
   const perfil = await exigirPerfil();
   const { yo, otro } = personasDe(perfil);
+  // Solo a Ceci, no a Juan.
+  const esCeci = perfil.nombre.trim().toLowerCase().startsWith('ceci');
 
   return (
     <div className="flex min-h-dvh">
@@ -19,6 +22,7 @@ export default async function LayoutLibreta({ children }: { children: React.Reac
 
       <TabBar />
       <EscuchaCambios espacioId={perfil.espacioId} yo={yo} otro={otro} />
+      {esCeci && <MensajeParaCeci />}
     </div>
   );
 }
